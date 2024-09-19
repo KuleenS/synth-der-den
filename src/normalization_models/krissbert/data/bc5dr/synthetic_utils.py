@@ -97,7 +97,7 @@ def synthetic_process(input_file: str, dataset, mode: int, omim_to_cui: Dict[str
             elif mode == Mode.SEMEVAL_REAL_WORLD.value and cui not in train_cuis:
                  d.mentions.append(m)
                 
-            elif mode == Mode.SEMEVAL_REAL_WORLD_PLUS.value and (cui not in train_cuis and cui not in test_cuis):
+            elif mode == Mode.ABLATION.value and cui not in test_cuis:
                  d.mentions.append(m)
         
         total_dataset.append(d)
