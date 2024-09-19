@@ -1,3 +1,5 @@
+import csv
+
 import os
 
 import pandas as pd
@@ -5,15 +7,13 @@ import pandas as pd
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 
-def ood_analysis(dataset_folder: str, results_folder: str):
-    conll_files = [os.path.join(results_folder, x) for x in os.listdir(results_folder)]
+def ood_analysis(dataset: str, dataset_folder: str, results_folder: str):
+    conll_files = [os.path.join(results_folder, x) for x in os.listdir(results_folder) if dataset in x]
 
-    semeval_train = pd.read_csv(os.path.join(dataset_folder, "semeval/train_semeval_cui.conll"), sep="\s", header = None, names = ["token", "label", "cui"])
+    semeval_train = pd.read_csv(os.path.join(dataset_folder, f"{dataset}/train_{dataset}_cui.conll"), delim_whitespace=True, header = None, names = ["token", "label", "cui"], quoting=csv.QUOTE_NONE)
 
     train_cuis = set(semeval_train.cui[(semeval_train.cui != "NOCUI") & (semeval_train.cui != "CUI-less")].unique())
     train_cuis.add("CUI-less")
-
-    semeval_test_gold = pd.read_csv(os.path.join(dataset_folder, "semeval/test_semeval_cui.conll"), sep="\s", header = None, names = ["token", "label", "cui"])
 
     for conll_file in conll_files:
         print(os.path.basename(conll_file), "results")
@@ -51,46 +51,3 @@ def ood_analysis(dataset_folder: str, results_folder: str):
         print("Accuracy: {}".format(acc))
         print("Correct: {}".format(correct))
         print("Total: {}".format(len(df_ood)))
-
-
-# def per_cui_ood_analysis(dataset_folder: str, results_folder: str, generated_output: str):
-
-#     conll_files = [os.path.join(results_folder, x) for x in os.listdir(results_folder)]
-
-#     semeval_train = pd.read_csv(os.path.join(dataset_folder, "semeval_cui/trainsemeval.conll"), sep="\s", header = None, names = ["token", "label", "cui"])
-
-#     train_cuis = set(semeval_train.cui[(semeval_train.cui != "NOCUI") & (semeval_train.cui != "CUI-less")].unique())
-#     train_cuis.add("CUI-less")
-
-#     semeval_test = pd.read_csv(os.path.join(dataset_folder, "semeval_cui/testsemeval.conll"), sep="\s", header = None, names = ["token", "label", "cui"])
-
-#     test_cuis = set(semeval_test.cui[(semeval_test.cui != "NOCUI") & (semeval_test.cui != "CUI-less")].unique())
-
-#     cuis_generated = pd.read_csv(generated_output, header = None, names= ["cui", "default", "text"])
-
-#     generated_cuis = set(cuis_generated.cui[(cuis_generated.cui != "NOCUI") & (cuis_generated.cui != "CUI-less")].unique())
-
-#     ood_cuis = test_cuis - train_cuis
-
-#     overlap = generated_cuis & ood_cuis
-
-#     ood_not_gen = ood_cuis - generated_cuis
-
-#     total_correct = pd.Series([0] * len(overlap), index = list(overlap))
-
-#     for conll_file in conll_files[2:]:
-#         df = pd.read_csv(conll_file, sep='\s', engine='python', header=None, names = ['token', 'label','predicted', 'confidence', 'r'])
-
-#         df['cui'] = semeval_test['cui']
-
-#         df_ood = df[df['cui'].isin(overlap)].reset_index(drop = True, inplace = False)
-
-#         df_ood['correct'] = np.where(df_ood['predicted'] == df_ood['label'], 1, 0)
-
-#         ood_correct = df_ood.groupby('cui')[['cui', 'correct']].agg(sum)
-
-#         ood_correct = np.where(ood_correct['correct'] > 0, 1, 0)
-
-#         total_correct = total_correct + ood_correct
-
-#         print(conll_file, ood_correct.sum()/len(ood_correct))
