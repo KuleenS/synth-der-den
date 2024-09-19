@@ -26,18 +26,18 @@ def combine_with_generated(output_data: str, generated_path: str, training_datas
 
 def label_generated_conll(dataset_folder: str, training_dataset: str, model_output: str):
     models = ['biobert']
-    datasets = ['filtered']
+    datasets_modes = ['filtered']
     os.environ['MKL_THREADING_LAYER'] = 'GNU'
 
 
-    for i in range(len(datasets)):
-        dataset = datasets[i]
-        os.makedirs(os.path.join(dataset_folder, f'{dataset}genlabelled'), exist_ok=True)
+    for i in range(len(datasets_modes)):
+        datasets_mode = datasets_modes[i]
+        os.makedirs(os.path.join(dataset_folder, f'{training_dataset}_{datasets_mode}genlabelled'), exist_ok=True)
         for j in range(len(models)):
 
-            input_file = os.path.join(dataset_folder, f"{dataset}gen", f"total{dataset}gen.conll")
+            input_file = os.path.join(dataset_folder, f"{training_dataset}_{datasets_mode}gen", f"total{datasets_mode}gen.conll")
 
-            output_file = os.path.join(dataset_folder, f"{dataset}genlabelled", f"{dataset}generated{models[j]}label{training_dataset}.conll")
+            output_file = os.path.join(dataset_folder, f"{training_dataset}_{datasets_mode}genlabelled", f"{datasets_mode}generated{models[j]}label{training_dataset}.conll")
 
             args = Namespace(
                 file = input_file,
@@ -48,7 +48,7 @@ def label_generated_conll(dataset_folder: str, training_dataset: str, model_outp
             predict(args=args)
 
 
-        data = process_labeled_generated_conll(os.path.join(dataset_folder, f"{dataset}genlabelled", f"{dataset}generated{models[j]}label{training_dataset}.conll"))
+        data = process_labeled_generated_conll(os.path.join(dataset_folder, f"{training_dataset}_{datasets_mode}genlabelled", f"{datasets_mode}generated{models[j]}label{training_dataset}.conll"))
         
-        data.to_csv(os.path.join(dataset_folder,f'{dataset}genlabelled', f'{dataset}generated{models[j]}labelclean{training_dataset}.conll'), index=False, sep=" ", header=False)
+        data.to_csv(os.path.join(dataset_folder,f'{training_dataset}_{datasets_mode}genlabelled', f'{datasets_mode}generated{models[j]}labelclean{training_dataset}.conll'), index=False, sep=" ", header=False)
 

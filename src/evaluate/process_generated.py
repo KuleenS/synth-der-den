@@ -1,3 +1,5 @@
+import csv
+
 import os
 
 import re
@@ -17,7 +19,7 @@ class Mode(Enum):
     NORMAL = 0
     CHEATING = 1
     REAL_WORLD = 2
-    REAL_WORLD_PLUS = 3
+    ABLATION = 3
 
 def label_line(text: str, filtered: bool) -> Optional[List[Tuple[int, int, str, str]]]:
     #function to get the nertags for generated text
@@ -99,39 +101,33 @@ def preprocess_parallel(texts, nlp, filtered, chunksize=100):
         total_labels.extend(pair[1])
     return total_tokens, total_labels
 
-def generated_to_conll(generated_output: str, output_path: str, filtered: bool, mode: int) -> None:
+def generated_to_conll(generated_output: str, output_path: str, filtered: bool, mode: int, dataset: str) -> None:
     #reads csv of generated text
     df = pd.read_csv(generated_output)
 
     df = df[~df['matched_output'].isna()]
 
     if mode == Mode.CHEATING.value: # respectfully cheating
-        semeval_test = pd.read_csv(os.path.join(output_path, "semeval/test_semeval_cui.conll"), sep="\s", header = None, names = ["token", "label", "cui"])
+        dataset_test = pd.read_csv(os.path.join(output_path, f"{dataset}/test_{dataset}_cui.conll"), delim_whitespace=True, header = None, names = ["token", "label", "cui"], quoting=csv.QUOTE_NONE)
 
-        test_cuis = set(semeval_test.cui[(semeval_test.cui != "NOCUI") & (semeval_test.cui != "CUI-less")].unique())
+        test_cuis = set(dataset_test.cui[(dataset_test.cui != "NOCUI") & (dataset_test.cui != "CUI-less")].unique())
 
         df = df[df['cui'].isin(test_cuis)]
     
     elif mode == Mode.REAL_WORLD.value:
-        semeval_train = pd.read_csv(os.path.join(output_path, "semeval/train_semeval_cui.conll"), sep="\s", header = None, names = ["token", "label", "cui"])
+        dataset_train = pd.read_csv(os.path.join(output_path, f"{dataset}/train_{dataset}_cui.conll"), delim_whitespace=True, header = None, names = ["token", "label", "cui"], quoting=csv.QUOTE_NONE)
 
-        train_cuis = set(semeval_train.cui[(semeval_train.cui != "NOCUI") & (semeval_train.cui != "CUI-less")].unique())
+        train_cuis = set(dataset_train.cui[(dataset_train.cui != "NOCUI") & (dataset_train.cui != "CUI-less")].unique())
 
         df = df[~df['cui'].isin(train_cuis)]
     
-    elif mode == Mode.REAL_WORLD_PLUS.value:
-        semeval_test = pd.read_csv(os.path.join(output_path, "semeval/test_semeval_cui.conll"), sep="\s", header = None, names = ["token", "label", "cui"])
+    elif mode == Mode.ABLATION.value:
+        dataset_test = pd.read_csv(os.path.join(output_path, f"{dataset}/test_{dataset}_cui.conll"), delim_whitespace=True, header = None, names = ["token", "label", "cui"], quoting=csv.QUOTE_NONE)
 
-        test_cuis = set(semeval_test.cui[(semeval_test.cui != "NOCUI") & (semeval_test.cui != "CUI-less")].unique())
+        test_cuis = set(dataset_test.cui[(dataset_test.cui != "NOCUI") & (dataset_test.cui != "CUI-less")].unique())
 
-        semeval_test = pd.read_csv(os.path.join(output_path, "semeval/train_semeval_cui.conll"), sep="\s", header = None, names = ["token", "label", "cui"])
-
-        train_cuis = set(semeval_test.cui[(semeval_test.cui != "NOCUI") & (semeval_test.cui != "CUI-less")].unique())
-
-        total_cuis = train_cuis | test_cuis
-
-        df = df[~df['cui'].isin(total_cuis)]
-
+        df = df[~df['cui'].isin(test_cuis)]
+    
     #cleans up the data 
     nlp = spacy.load("en_core_sci_md")
     texts = list(df['matched_output'])
@@ -142,7 +138,7 @@ def generated_to_conll(generated_output: str, output_path: str, filtered: bool, 
     #writes out the output 
     if filtered:
 
-        filtered_path = os.path.join(output_path,'filteredgen')
+        filtered_path = os.path.join(output_path, f"{dataset}_filteredgen")
 
         if not os.path.exists(filtered_path):
             os.mkdir(filtered_path)
@@ -152,7 +148,7 @@ def generated_to_conll(generated_output: str, output_path: str, filtered: bool, 
 
     else:
         
-        complete_path = os.path.join(output_path,'completegen')
+        complete_path = os.path.join(output_path,f"{dataset}_completegen")
 
         if not os.path.exists(complete_path):
             os.mkdir(complete_path)
