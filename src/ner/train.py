@@ -4,8 +4,6 @@ import csv
 
 import os
 
-import datasets
-
 import evaluate
 
 import torch
@@ -13,8 +11,6 @@ import torch
 from torch.utils.data import DataLoader
 
 from torch.optim import AdamW
-
-import pandas as pd
 
 from transformers import AutoTokenizer, AutoModelForTokenClassification, get_scheduler
 
@@ -267,7 +263,7 @@ def main(args):
 
     results = metric.compute()
 
-    model.save_pretrained(output_dir)
+    model.save_pretrained(output_dir, safe_serialization=False)
     tokenizer.save_pretrained(output_dir)
 
     total_predictions = [id2label[x] if x != " " else " " for x in total_predictions]
