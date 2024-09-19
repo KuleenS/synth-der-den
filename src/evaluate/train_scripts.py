@@ -11,13 +11,13 @@ def train_baseline_berts(dataset_folder: str, results_folder: str, training_data
     save_directories = [os.path.join(model_output, x) for x in [f'baselines/{training_dataset}/biobert/']]
 
     for i in range(len(models_to_train)):
-        print(f"Training baselines {training_dataset} testing on semeval with {models_to_train[i]}")
+        print(f"Training baselines {training_dataset} testing on {training_dataset} with {models_to_train[i]}")
         input_files = [
                     os.path.join(dataset_folder, f"{training_dataset}", f"train_{training_dataset}.conll"), 
-                    os.path.join(dataset_folder, f"semeval", f"dev_semeval.conll"),
-                    os.path.join(dataset_folder, f"semeval", f"test_semeval_cui.conll")]
+                    os.path.join(dataset_folder, f"{training_dataset}", f"dev_{training_dataset}.conll"),
+                    os.path.join(dataset_folder, f"{training_dataset}", f"test_{training_dataset}_cui.conll")]
 
-        output_file = os.path.join(results_folder, f"{models_output[i]}_baseline_trainedon_{training_dataset}_testedwith_semeval.conll")
+        output_file = os.path.join(results_folder, f"{models_output[i]}_baseline_trained_on_{training_dataset}_testedwith_{training_dataset}.conll")
 
         args = Namespace(
             files = input_files,
@@ -31,9 +31,8 @@ def train_baseline_berts(dataset_folder: str, results_folder: str, training_data
 
 def train_baseline_generated_berts(dataset_folder: str, results_folder: str, model_output: str, test_set: str) -> None:
     datasets = [
-        'filteredgenlabelled/filteredgeneratedbiobertlabelcleani2b2.conll', 
-        'filteredgenlabelled/filteredgeneratedbiobertlabelcleansemeval.conll',
-        'filteredgen/totalfilteredgen.conll',
+        f'{test_set}_filteredgenlabelled/filteredgeneratedbiobertlabelclean{test_set}.conll', 
+        f'{test_set}_filteredgen/totalfilteredgen.conll',
     ]
 
     datasets = [os.path.join(dataset_folder, x) for x in datasets]
@@ -41,7 +40,7 @@ def train_baseline_generated_berts(dataset_folder: str, results_folder: str, mod
     models_to_train = ['dmis-lab/biobert-base-cased-v1.1']
     models_output = ['biobert']
 
-    save_directories = ["baselines/generated_i2b2_labelled/biobert/", "baselines/generated_semeval_labelled/biobert/", "baselines/generated/biobert/"]
+    save_directories = [f"baselines/generated_{test_set}_labelled/biobert/", f"baselines/{test_set}_generated/biobert/"]
 
     save_directories = [os.path.join(model_output, x) for x in save_directories]
 
@@ -71,24 +70,24 @@ def train_baseline_generated_berts(dataset_folder: str, results_folder: str, mod
             train(args = args)
     
 def finetune_berts(dataset_folder: str, results_folder: str, model_output: str, training_set: str) -> None:
-    input_models = ["baselines/generated_i2b2_labelled/biobert/", "baselines/generated_semeval_labelled/biobert/", "baselines/generated/biobert/"]
+    input_models = [f"baselines/generated_{training_set}_labelled/biobert/", f"baselines/{training_set}_generated/biobert/"]
 
     output_models = [os.path.join(model_output, "combined", x.split("/")[1]+ f"_{training_set}") for x in input_models]
 
     input_models = [os.path.join(model_output, x) for x in input_models]
 
-    input_model_names = ["generated_i2b2_labelled", "generated_semeval_labelled", "generated"]
+    input_model_names = [f"generated_{training_set}_labelled", f"{training_set}_generated"]
 
     input_files = [
                     os.path.join(dataset_folder, f"{training_set}" , f"train_{training_set}.conll"), 
-                    os.path.join(dataset_folder, f"semeval", f"dev_semeval.conll"),
-                    os.path.join(dataset_folder, f"semeval", f"test_semeval_cui.conll")]
+                    os.path.join(dataset_folder, f"{training_set}", f"dev_{training_set}.conll"),
+                    os.path.join(dataset_folder, f"{training_set}", f"test_{training_set}_cui.conll")]
 
     for i in range(len(input_models)):
 
-        output_file = os.path.join(results_folder, f"{input_model_names[i]}_model_then_trained_on_{training_set}_tested_on_semeval.conll")
+        output_file = os.path.join(results_folder, f"{input_model_names[i]}_model_then_trained_on_{training_set}_tested_on_{training_set}.conll")
 
-        print(f"Training baselines generated {training_set} testing on semeval with {input_models[i]}")
+        print(f"Training baselines generated {training_set} testing on {training_set} with {input_models[i]}")
 
         args = Namespace(
                 files = input_files,
