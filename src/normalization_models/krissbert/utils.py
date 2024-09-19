@@ -10,7 +10,7 @@ class Mode(Enum):
     SEMEVAL_NORMAL = 1
     SEMEVAL_CHEATING = 2
     SEMEVAL_REAL_WORLD = 3
-    SEMEVAL_REAL_WORLD_PLUS = 4
+    ABLATION = 4
 
 def generate_vectors(
     encoder: torch.nn.Module,

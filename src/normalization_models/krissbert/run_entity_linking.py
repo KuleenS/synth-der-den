@@ -306,7 +306,7 @@ def evaluate(
     ds: torch.utils.data.Dataset,
     result_ent_ids: List[Tuple[List[object], List[float]]],
     lookup_table: str,
-    top_ks: List[int] = (1, 5, 50, 100),
+    top_ks: List[int] = (1, 5, 10, 50, 100),
 ) -> List[Dict]:
     lut = {}
     with open(lookup_table, encoding='utf-8') as f:
