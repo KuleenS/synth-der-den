@@ -13,7 +13,7 @@ class Mode(Enum):
     SEMEVAL_NORMAL = 1
     SEMEVAL_CHEATING = 2
     SEMEVAL_REAL_WORLD = 3
-    SEMEVAL_REAL_WORLD_PLUS = 4
+    ABLATION = 4
 
 class Synthetic:
 
@@ -55,7 +55,7 @@ class Synthetic:
                 elif mode == Mode.SEMEVAL_REAL_WORLD.value and cui not in train_cuis:
                     results.append(m)
                     
-                elif mode == Mode.SEMEVAL_REAL_WORLD_PLUS.value and (cui not in train_cuis and cui not in test_cuis):
+                elif mode == Mode.ABLATION.value and (cui not in test_cuis):
                     results.append(m)
             
         return results

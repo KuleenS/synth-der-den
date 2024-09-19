@@ -16,10 +16,10 @@ from transformers import AutoTokenizer, AutoModel
 
 from tqdm import tqdm
 
-from bc5dr import BC5CDR
-from ncbi import NCBI
-from semeval import Semeval
-from synthetic import Synthetic
+from src.normalization_models.sapbert.bc5dr import BC5CDR
+from src.normalization_models.sapbert.ncbi import NCBI
+from src.normalization_models.sapbert.semeval import Semeval
+from src.normalization_models.sapbert.synthetic import Synthetic
 
 
 def accuracy_at_k(predictions, labels, k):
@@ -85,7 +85,7 @@ def run_evaluation_synthetic(train, synthetic_train, test, tokenizer, model):
         
         labels.extend(label)
     
-    regular_accuracy = accuracy_at_k(predictions, labels, 1), accuracy_at_k(predictions, labels, 50), accuracy_at_k(predictions, labels, 100)
+    regular_accuracy = accuracy_at_k(predictions, labels, 1), accuracy_at_k(predictions, labels, 5), accuracy_at_k(predictions, labels, 10), accuracy_at_k(predictions, labels, 50), accuracy_at_k(predictions, labels, 100)
 
     labels_ood, predictions_ood = [], []
 
@@ -94,7 +94,7 @@ def run_evaluation_synthetic(train, synthetic_train, test, tokenizer, model):
             labels_ood.append(label)
             predictions_ood.append(prediction)
 
-    ood_accuracy = accuracy_at_k(predictions_ood, labels_ood, 1), accuracy_at_k(predictions_ood, labels_ood, 50), accuracy_at_k(predictions_ood, labels_ood, 100)
+    ood_accuracy = accuracy_at_k(predictions_ood, labels_ood, 1), accuracy_at_k(predictions_ood, labels_ood, 5), accuracy_at_k(predictions_ood, labels_ood, 10), accuracy_at_k(predictions_ood, labels_ood, 50), accuracy_at_k(predictions_ood, labels_ood, 100)
 
     return regular_accuracy, ood_accuracy
 
@@ -148,7 +148,7 @@ def run_evaluation(train, test, tokenizer, model):
         
         labels.extend(label)
     
-    regular_accuracy = accuracy_at_k(predictions, labels, 1), accuracy_at_k(predictions, labels, 50), accuracy_at_k(predictions, labels, 100)
+    regular_accuracy = accuracy_at_k(predictions, labels, 1), accuracy_at_k(predictions, labels, 5), accuracy_at_k(predictions, labels, 10), accuracy_at_k(predictions, labels, 50), accuracy_at_k(predictions, labels, 100)
 
     labels_ood, predictions_ood = [], []
 
@@ -157,7 +157,7 @@ def run_evaluation(train, test, tokenizer, model):
             labels_ood.append(label)
             predictions_ood.append(prediction)
 
-    ood_accuracy = accuracy_at_k(predictions_ood, labels_ood, 1), accuracy_at_k(predictions_ood, labels_ood, 50), accuracy_at_k(predictions_ood, labels_ood, 100)
+    ood_accuracy = accuracy_at_k(predictions_ood, labels_ood, 1), accuracy_at_k(predictions_ood, labels_ood, 5), accuracy_at_k(predictions_ood, labels_ood, 10), accuracy_at_k(predictions_ood, labels_ood, 50), accuracy_at_k(predictions_ood, labels_ood, 100)
 
     return regular_accuracy, ood_accuracy
 
