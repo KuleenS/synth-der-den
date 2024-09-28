@@ -2,6 +2,8 @@ import argparse
 
 import csv
 
+import os
+
 import datasets
 
 import evaluate
@@ -21,10 +23,22 @@ from src.ner.utils import NERDataset
 def main(args):
 
     file = args.file
+    files = args.files
+
+    file_list = None
+
+    conll_output = None
+
+    if file is None:
+        file_list = files
+        conll_output = [os.path.join(args.conll_output, x) for x in file_list]
+    elif files is None:
+        file_list = [file]
+        conll_output = [args.conll_output]
+    else:
+        raise ValueError("Must specify file or files")
 
     model_checkpoint = args.model_checkpoint
-
-    conll_output = args.conll_output
 
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
 
@@ -33,97 +47,99 @@ def main(args):
     id2label = {i: label for i, label in enumerate(label_names)}
     label2id = {v: k for k, v in id2label.items()}
 
-    file_processor = FileProcessor()
+    for conll_file, output_file in tqdm(file_list, conll_output):
 
-    test_sentences, test_labels = file_processor.process_file(file, test=True)
+        file_processor = FileProcessor()
 
-    test_labels = [[label2id[y] for y in x if y in label2id] for x in test_labels]
+        test_sentences, test_labels = file_processor.process_file(conll_file, test=True)
 
-    test_dataset = NERDataset(tokenizer, test_sentences, test_labels)
+        test_labels = [[label2id[y] for y in x if y in label2id] for x in test_labels]
 
-    data_collator = DataCollatorForTokenClassificationCustom(tokenizer)
+        test_dataset = NERDataset(tokenizer, test_sentences, test_labels)
 
-    test_dataloader = DataLoader(
-        test_dataset, collate_fn=data_collator, batch_size=32
-    )
+        data_collator = DataCollatorForTokenClassificationCustom(tokenizer)
 
-    model = AutoModelForTokenClassification.from_pretrained(
-        model_checkpoint,
-        id2label=id2label,
-        label2id=label2id,
-    )
+        test_dataloader = DataLoader(
+            test_dataset, collate_fn=data_collator, batch_size=32
+        )
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model = AutoModelForTokenClassification.from_pretrained(
+            model_checkpoint,
+            id2label=id2label,
+            label2id=label2id,
+        )
 
-    model.to(device)
-    
-    model.eval()
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    total_predictions = []
-    total_tokens = []
-
-    for batch in tqdm(test_dataloader):
-
-        word_ids = batch["word_ids"]
-
-        del batch["word_ids"]
-
-        batch.to(device)
-
-        with torch.no_grad():
-
-            outputs = model(**batch)
-
-        predictions = outputs.logits.argmax(dim=-1)
-
-        tokens = batch["input_ids"]
+        model.to(device)
         
-        for i in range(len(tokens)):
+        model.eval()
 
-            sentence = tokens[i].detach().cpu().tolist()
+        total_predictions = []
+        total_tokens = []
 
-            sentence_word_ids = word_ids[i].detach().cpu().tolist()
+        for batch in tqdm(test_dataloader):
 
-            sentence_predictions = predictions[i]
+            word_ids = batch["word_ids"]
 
-            num_words = max(sentence_word_ids) + 1
+            del batch["word_ids"]
 
-            words = [""] * num_words
+            batch.to(device)
 
-            word_level_sentence_predictions = []
+            with torch.no_grad():
 
-            for token,word_id, token_prediction in zip(sentence, sentence_word_ids, sentence_predictions):
+                outputs = model(**batch)
 
-                if word_id != -100:
+            predictions = outputs.logits.argmax(dim=-1)
 
-                    token_string = tokenizer.convert_ids_to_tokens(token)
-
-                    if len(words[word_id]) == 0:
-                        word_level_sentence_predictions.append(token_prediction.item())
-                    
-                    words[word_id] += token_string
+            tokens = batch["input_ids"]
             
-            words = [x.replace("##", "") for x in words]
+            for i in range(len(tokens)):
 
-            total_tokens.extend(words)
+                sentence = tokens[i].detach().cpu().tolist()
 
-            total_predictions.extend(word_level_sentence_predictions)
+                sentence_word_ids = word_ids[i].detach().cpu().tolist()
 
-            total_tokens.extend(" ")
+                sentence_predictions = predictions[i]
 
-            total_predictions.extend(" ")
+                num_words = max(sentence_word_ids) + 1
 
-    total_predictions = [id2label[x] if x != " " else " " for x in total_predictions ]
+                words = [""] * num_words
 
-    with open(conll_output, "w") as f:
-        writer = csv.writer(f, delimiter=" ", quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                word_level_sentence_predictions = []
 
-        writer.writerows(zip(total_tokens, total_predictions))
+                for token,word_id, token_prediction in zip(sentence, sentence_word_ids, sentence_predictions):
 
-    
+                    if word_id != -100:
+
+                        token_string = tokenizer.convert_ids_to_tokens(token)
+
+                        if len(words[word_id]) == 0:
+                            word_level_sentence_predictions.append(token_prediction.item())
+                        
+                        words[word_id] += token_string
+                
+                words = [x.replace("##", "") for x in words]
+
+                total_tokens.extend(words)
+
+                total_predictions.extend(word_level_sentence_predictions)
+
+                total_tokens.extend(" ")
+
+                total_predictions.extend(" ")
+
+        total_predictions = [id2label[x] if x != " " else " " for x in total_predictions ]
+
+        with open(output_file, "w") as f:
+            writer = csv.writer(f, delimiter=" ", quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+            writer.writerows(zip(total_tokens, total_predictions))
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Say hello')
-    parser.add_argument('-f','--file')
+    parser.add_argument('-f','--file', required=False)
+    parser.add_argument('-f','--files', nargs="+",required=False)
     parser.add_argument('-m','--model_checkpoint')
     parser.add_argument('-c','--conll_output')
 
