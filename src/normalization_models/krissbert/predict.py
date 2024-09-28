@@ -268,6 +268,16 @@ def load_umls_data(files_patterns: List[str], candidate_ids: Dict = None) -> Dic
                 umls_data[cui] = (meta, vec)
     return umls_data
 
+def dedup_ids(ids: List[Dict]) -> List[Dict]:
+    deduped_ids = []
+    seen_cuis = set()
+    for d in ids:
+        if all(cui in seen_cuis for cui in d['cuis']):
+            continue
+        seen_cuis.update(d['cuis'])
+        deduped_ids.append(d)
+    return deduped_ids
+
 def main(args):
     set_seed(args.seed)
 
@@ -291,35 +301,27 @@ def main(args):
     index.init_index(vector_size * 2)
 
     # candidate ids
-    candidate_ids = None
+    candidate_ids = set()
     if args.entity_list_ids is not None:
         with open(args.entity_list_ids, encoding='utf-8') as f:
-            candidate_ids = set(f.read().split('\n'))
+            for ln in f:
+                cuis, name = ln.strip().split('||')
+                cuis = cuis.split('|')
+                candidate_ids.update(cuis)
 
     # Start indexing
     input_paths = [args.encoded_files]
-
-    print(input_paths)
 
     retriever = FaissRetriever(encoder, tokenizer, args.batch_size,args.max_length, index)
 
     umls_data = load_umls_data([], candidate_ids)
 
-    index_path = None
-    if index_path and index.index_exists(index_path):
-        retriever.index.deserialize(index_path)
-    else:
-        retriever.index_encoded_data(
-            vector_files=input_paths,
-            buffer_size=index_buffer_sz,
-            candidate_ids=candidate_ids,
-            umls_data=umls_data,
-        )
-        if index_path:
-            pathlib.Path(os.path.dirname(index_path)).mkdir(
-                parents=True, exist_ok=True)
-            retriever.index.serialize(index_path)
-
+    retriever.index_encoded_data(
+        vector_files=input_paths,
+        buffer_size=index_buffer_sz,
+        candidate_ids=candidate_ids,
+        umls_data=umls_data,
+    )
 
     for conll_file in args.files:
 
@@ -339,7 +341,24 @@ def main(args):
             top_ids_and_scores = retriever.get_top_hits(
                 mentions_tensor.numpy(), args.num_retrievals * 32)
 
-            print(top_ids_and_scores)
+            lut = {}
+            with open(args.entity_list_ids, encoding='utf-8') as f:
+                for ln in f:
+                    cuis, name = ln.strip().split('||')
+                    cuis = cuis.split('|')
+                    lut[name] = cuis
+
+            n = len(ds)
+            for i in range(len(top_ids_and_scores)):
+                ids, _ = top_ids_and_scores[i]
+                ids = dedup_ids(ids)
+                ids = ids[:5]
+                candidates = [
+                    {'cuis': eid['cuis']}
+                    for eid in ids
+                ]
+
+                print(candidates)
         
 
 if __name__ == '__main__':
