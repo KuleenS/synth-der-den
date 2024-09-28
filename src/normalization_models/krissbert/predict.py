@@ -6,14 +6,9 @@ import pickle
 import time
 import math
 import multiprocessing
-import tomli
 from typing import List, Tuple, Dict, Iterator, Set
 from functools import partial
 from multiprocessing.dummy import Pool
-
-import mysql.connector as mariadb
-
-import pandas as pd
 
 import numpy as np
 import torch
@@ -32,6 +27,7 @@ from transformers import (
 )
 
 from src.normalization_models.krissbert.utils import generate_vectors
+from src.normalization_models.krissbert.data.conll.conll_data import CONLLDataset
 
 def iterate_encoded_files(
     vector_files: list,
@@ -254,26 +250,35 @@ class FaissRetriever(DenseRetriever):
             for ret in it:
                 results += ret
             # results = self.index.search_knn(mention_vectors, top_k)
-        self.index = None
         return results
 
+def load_umls_data(files_patterns: List[str], candidate_ids: Dict = None) -> Dict:
+    input_paths = []
+    for pattern in files_patterns:
+        pattern_files = glob.glob(pattern)
+        input_paths.extend(pattern_files)
+    umls_data = {}
+    for file in sorted(input_paths):
+        with open(file, "rb") as reader:
+            for meta, vec in pickle.load(reader):
+                assert len(meta['cuis']) == 1, breakpoint()
+                cui = meta['cuis'][0]
+                if candidate_ids and cui not in candidate_ids:
+                    continue
+                umls_data[cui] = (meta, vec)
+    return umls_data
+
 def main(args):
-
-    config_path = args.config
-
-    with open(config_path, "rb") as f:
-        config = tomli.load(f)
-
-    set_seed(config["seed"])
+    set_seed(args.seed)
 
     # Load pretrained.
-    bert_config = AutoConfig.from_pretrained(config["model"])
+    bert_config = AutoConfig.from_pretrained(args.model)
     tokenizer = AutoTokenizer.from_pretrained(
-        config["model"],
+        args.model,
         use_fast=True,
     )
     encoder = AutoModel.from_pretrained(
-        config["model"],
+        args.model,
         config=bert_config
     )
     encoder.cuda()
@@ -287,27 +292,20 @@ def main(args):
 
     # candidate ids
     candidate_ids = None
-    if "entity_list_ids" in config:
-        with open(config["entity_list_ids"], encoding='utf-8') as f:
+    if args.entity_list_ids is not None:
+        with open(args.entity_list_ids, encoding='utf-8') as f:
             candidate_ids = set(f.read().split('\n'))
 
     # Start indexing
-    input_paths = []
-    for pattern in config["encoded_files"]:
-        pattern_files = glob.glob(pattern)
-        input_paths.extend(pattern_files)
-    input_paths = sorted(set(input_paths))
+    input_paths = [args.encoded_files]
 
-    retriever = FaissRetriever(
-        encoder, tokenizer, config["batch_size"],config["max_length"], index)
-    mentions_tensor = retriever.generate_mention_vectors(ds)
+    print(input_paths)
 
-    # Load UMLS knowledge
-    umls_data = None
-    if "encoded_umls_files" in config:
-        umls_data = load_umls_data(config["encoded_umls_files"], candidate_ids)
+    retriever = FaissRetriever(encoder, tokenizer, args.batch_size,args.max_length, index)
 
-    index_path = config.get("index_path", None)
+    umls_data = load_umls_data([], candidate_ids)
+
+    index_path = None
     if index_path and index.index_exists(index_path):
         retriever.index.deserialize(index_path)
     else:
@@ -322,9 +320,39 @@ def main(args):
                 parents=True, exist_ok=True)
             retriever.index.serialize(index_path)
 
-    # Encode test data.
-    mentions_tensor = torch.cat([mentions_tensor, mentions_tensor], dim=1)
 
-    # To get k different entities, we retrieve 32 * k mentions and then dedup.
-    top_ids_and_scores = retriever.get_top_hits(
-        mentions_tensor.numpy(), config["num_retrievals"] * 32)
+    for conll_file in args.files:
+
+        with open(conll_file, "r") as f:
+            conll_data = [x.strip().split(" ") for x in f.readlines()]
+
+        ds = CONLLDataset(conll_data)
+
+        mentions_tensor = retriever.generate_mention_vectors(ds)
+
+        if len(mentions_tensor) != 0:
+
+        # Encode test data.
+            mentions_tensor = torch.cat([mentions_tensor, mentions_tensor], dim=1)
+
+            # To get k different entities, we retrieve 32 * k mentions and then dedup.
+            top_ids_and_scores = retriever.get_top_hits(
+                mentions_tensor.numpy(), args.num_retrievals * 32)
+
+            print(top_ids_and_scores)
+        
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--files", nargs="+")
+    parser.add_argument("--encoded_files")
+    parser.add_argument("--entity_list_ids")
+    parser.add_argument("--model", type=str, default="microsoft/BiomedNLP-KRISSBERT-PubMed-UMLS-EL")
+    parser.add_argument("--max_length", type=int, default=64)
+    parser.add_argument("--seed", type=int, default=12345)
+    parser.add_argument("--batch_size", type=int, default=256)
+    parser.add_argument("--num_retrievals", type=int, default=100)
+
+    args = parser.parse_args()
+
+    main(args)
