@@ -1,21 +1,22 @@
 import argparse
 
+import codecs
+
 import os
 
 import spacy
 
 def main(args):
-    
-
-    list_of_text_filse = [os.path.join(args.input_path, x) for x in os.listdir(args.input_path)]
+    list_of_text_files = [os.path.join(args.input_folder, x) for x in os.listdir(args.input_folder)]
 
     nlp = spacy.load("en_core_sci_md")
 
-    for filename in list_of_text_filse:
+    for filename in list_of_text_files:
+        print(filename)
         tokens = []
         labels = []
 
-        with open(filename, "r") as f:
+        with codecs.open(filename, "r", encoding='utf-8', errors="ignore") as f:
             text_input = f.read()
 
         #loads pipefiles
@@ -33,8 +34,8 @@ def main(args):
 
             tokens.extend(' ')
             labels.extend(' ')
-
-        with open(os.path.join(args.output_folder, os.path.basename(filename)[:-4]+".conll"), "w"):
+        
+        with open(os.path.join(args.output_folder, os.path.basename(filename)[:-4]+".conll"), "w") as f:
             for token, label in zip(tokens, labels):
                 f.write(f'{token} {label}\n')
 
