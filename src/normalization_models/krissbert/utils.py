@@ -50,7 +50,7 @@ def generate_vectors(
         else:
             results.extend(out.cpu().split(1, dim=0))
 
-    if not is_prototype:
+    if not is_prototype and len(results) != 0:
         results = torch.cat(results, dim=0)
 
     return results
