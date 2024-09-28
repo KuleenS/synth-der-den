@@ -31,7 +31,7 @@ def main(args):
 
     if file is None:
         file_list = files
-        conll_output = [os.path.join(args.conll_output, x) for x in file_list]
+        conll_output = [os.path.join(args.conll_output, os.path.basename(x)) for x in file_list]
     elif files is None:
         file_list = [file]
         conll_output = [args.conll_output]
@@ -47,7 +47,7 @@ def main(args):
     id2label = {i: label for i, label in enumerate(label_names)}
     label2id = {v: k for k, v in id2label.items()}
 
-    for conll_file, output_file in tqdm(file_list, conll_output):
+    for conll_file, output_file in tqdm(zip(file_list, conll_output)):
 
         file_processor = FileProcessor()
 
@@ -137,9 +137,9 @@ def main(args):
             writer.writerows(zip(total_tokens, total_predictions))
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description = 'Say hello')
-    parser.add_argument('-f','--file', required=False)
-    parser.add_argument('-f','--files', nargs="+",required=False)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--file', required=False)
+    parser.add_argument('--files', nargs="+",required=False)
     parser.add_argument('-m','--model_checkpoint')
     parser.add_argument('-c','--conll_output')
 
