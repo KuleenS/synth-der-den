@@ -4,6 +4,7 @@ from src.normalization_models.krissbert.data.document import Document
 from src.normalization_models.krissbert.data.mention import Mention
 
 def conll_utils_process(dataset):
+
     krissbert_dataset = []
 
     d = Document()
@@ -18,18 +19,29 @@ def conll_utils_process(dataset):
 
     token_offsets_pairs = []
 
-    for i in range(len(token_offsets) - 1):
+    for i in range(len(token_offsets)):
         if i == 0:
             token_offsets_pairs.append((0, token_offsets[i]))
         else:
-            token_offsets_pairs.append((token_offsets[i], token_offsets[i+1]))
+            token_offsets_pairs.append((token_offsets[i-1], token_offsets[i]))
 
-    for token, token_offsets_pair in zip(tokens, token_offsets_pairs):
-        if token == "DISEASE":
+    j = 0 
 
-            m = Mention(cui=None, start=token_offsets_pair[0], end=token_offsets_pair[1], text=text)
+    while j < len(tokens):
+        if tokens[j] == "DISEASE":
+            
+            k = 0
+
+            while tokens[j+k] == "DISEASE":
+                k+=1 
+
+            m = Mention(cui=None, start=token_offsets_pairs[j][0], end=token_offsets_pairs[j+k-1][1], text=text)
 
             d.mentions.append(m)
+                
+            j += k
+        else:
+            j += 1
             
     krissbert_dataset.append(d)
     
