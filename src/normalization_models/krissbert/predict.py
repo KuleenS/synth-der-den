@@ -354,11 +354,14 @@ def main(args):
                 ids = dedup_ids(ids)
                 ids = ids[:5]
                 candidates = [
-                    {'cuis': eid['cuis']}
-                    for eid in ids
+                    eid['cuis'] for eid in ids
                 ]
 
-                print(candidates)
+                mention = ds[i]
+
+                text = mention.mention
+
+                print(text, sum(candidates, []))
         
 
 if __name__ == '__main__':
