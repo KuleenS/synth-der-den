@@ -32,7 +32,7 @@ def conll_utils_process(dataset):
             
             k = 0
 
-            while tokens[j+k] == "DISEASE":
+            while j+k < len(tokens) and tokens[j+k] == "DISEASE":
                 k+=1 
 
             m = Mention(cui=None, start=token_offsets_pairs[j][0], end=token_offsets_pairs[j+k-1][1], text=text)
