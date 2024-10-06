@@ -1,0 +1,24 @@
+spacy
+datasets
+joblib
+pandas
+numpy
+scikit-learn
+backoff
+openai
+tqdm
+tomli
+mysql-connector-python
+transformers
+regex
+intervaltree
+evaluate
+peft
+trl
+scispacy
+faiss-gpu
+https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_md-0.5.4.tar.gz
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch
+torchvision
+torchaudio
