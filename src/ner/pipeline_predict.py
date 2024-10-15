@@ -23,10 +23,10 @@ def main(args):
 
     if file is None:
         file_list = files
-        conll_output = [os.path.join(args.conll_output, os.path.basename(x)) for x in file_list]
+        conll_output = [os.path.join(args.conll_output, os.path.basename(x).replace(".txt", ".conll")) for x in file_list]
     elif files is None:
         file_list = [file]
-        conll_output = [args.conll_output]
+        conll_output = [args.conll_output.replace(".txt", ".conll")]
     else:
         raise ValueError("Must specify file or files")
 
@@ -39,7 +39,7 @@ def main(args):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    ner_pipeline = pipeline("ner", model=model, tokenizer=tokenizer, device=device, aggregation_strategy="average", stride=0)
+    ner_pipeline = pipeline("ner", model=model, tokenizer=tokenizer, device=device, batch_size=4, aggregation_strategy="average", stride=0)
 
     for conll_file, output_file in tqdm(zip(file_list, conll_output)):
         with open(conll_file, "r") as f:
@@ -49,26 +49,40 @@ def main(args):
 
         tokens = []
         labels = []
+
         for entity in result:
-            
+
             split_words = entity["word"].split(" ")
 
-            print(entity)
-
-            if entity["entity_group"] == "No Disease":
-                labels.extend(len(split_words)*["O"])
-            else:
-                labels.extend(len(split_words)*["DISEASE"])
-            
             tokens.extend(split_words)
+            
+            if entity["entity_group"] == "No Disease":
+                labels.extend(len(split_words) * ["O"])
+            else:
+                labels.extend(len(split_words) * ["DISEASE"])
+        
+        subword_removed_tokens = []
+        subword_removed_labels = []
 
-            tokens.append("SPLIT")
-            labels.append("O")
+        for token,label in zip(tokens, labels):
+            if token.startswith('##'):
+                token = subword_removed_tokens[len(subword_removed_tokens)-1] + token.replace('##','')
+
+                if subword_removed_labels[len(subword_removed_labels)-1] == "DISEASE" or label == "DISEASE":
+                    label = "DISEASE"
+                else:
+                    label = "O"
+
+                subword_removed_tokens.pop()
+                subword_removed_labels.pop()
+
+            subword_removed_tokens.append(token)
+            subword_removed_labels.append(label)
         
         with open(output_file, "w") as f:
             writer = csv.writer(f, delimiter=" ", quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
-            writer.writerows(zip(tokens, labels))
+            writer.writerows(zip(subword_removed_tokens, subword_removed_labels))
 
 
 if __name__ == "__main__":
