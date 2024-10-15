@@ -16,18 +16,21 @@ COPY environ.yml /app/environ.yml
 RUN conda env create --f /app/environ.yml
 # Activate the environment and install dependencies
 # This assumes you have a requirements.txt file in your project directory
-COPY ./src /app/src
-COPY ./processing_pipeline.sh /app/processing_pipeline.sh
+COPY src /app/src/
+COPY processing_pipeline.sh /app/processing_pipeline.sh
 
-COPY biobert /app/biobert
+COPY new_biobert /app/biobert
 COPY pipeline /app/pipeline
 COPY prototypes /app/prototypes
 
 # Set the working directory in the container
-WORKDIR /app
-
 # Give execution permission to the script
 RUN chmod +x /app/processing_pipeline.sh
 
+# Ensure this is the root of your project
+WORKDIR /app/
+# Add src to the Python path
+ENV PYTHONPATH=/app/src/  
+
 # Set the default command to run the application
-ENTRYPOINT  ["conda", "run", "-n", "generation", "/app/processing_pipeline.sh"]
+ENTRYPOINT ["conda", "run", "-n", "generation", "/app/processing_pipeline.sh"]
