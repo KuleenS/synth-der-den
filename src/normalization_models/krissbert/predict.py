@@ -325,6 +325,8 @@ def main(args):
 
     for conll_file in args.files:
 
+        entities = []
+
         with open(conll_file, "r") as f:
             conll_data = [x.strip().split(" ") for x in f.readlines()]
 
@@ -349,24 +351,33 @@ def main(args):
                     lut[name] = cuis
 
             n = len(ds)
+
             for i in range(len(top_ids_and_scores)):
                 ids, _ = top_ids_and_scores[i]
                 ids = dedup_ids(ids)
-                ids = ids[:5]
-                candidates = [
-                    eid['cuis'] for eid in ids
-                ]
-
+                id = ids[0]['cuis'][0]
                 mention = ds[i]
 
-                text = mention.mention
+                entity = {}
 
-                print(text, sum(candidates, []))
+                entities.append({"id": f"T{i}", "type": id, "start": mention.start, "end": mention.end, "text": mention.mention})
+        
+        ann_file_path = os.path.join(args.output_dir, os.path.basename(conll_file).replace(".conll", ".ann"))
+        txt_file_path = os.path.join(args.output_dir, os.path.basename(conll_file).replace(".conll", ".txt"))
+
+        with open(ann_file_path, "w") as f:
+            # Write entities
+            for entity in entities:
+                f.write(f"{entity['id']}\t{entity['type']}\t{entity['start']}\t{entity['end']}\t{entity['text']}\n")
+        
+        with open(txt_file_path, "w") as f:
+            f.write(" ".join([x[0] for x in conll_data]))
         
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--files", nargs="+")
+    parser.add_argument("--output_dir")
     parser.add_argument("--encoded_files")
     parser.add_argument("--entity_list_ids")
     parser.add_argument("--model", type=str, default="microsoft/BiomedNLP-KRISSBERT-PubMed-UMLS-EL")
