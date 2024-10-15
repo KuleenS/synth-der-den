@@ -2,7 +2,7 @@ import argparse
 
 import logging
 
-import tomllib
+import tomli
 
 from datasets import Dataset
 
