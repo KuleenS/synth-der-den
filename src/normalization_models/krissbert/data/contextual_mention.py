@@ -14,6 +14,8 @@ class ContextualMention:
     cuis: List[str]
     ctx_l: str
     ctx_r: str
+    start: int
+    end: int
 
     def to_tensor(self, tokenizer: PreTrainedTokenizer, max_length: int) -> T:
         ctx_l_ids = tokenizer.encode(

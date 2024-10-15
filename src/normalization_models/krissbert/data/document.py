@@ -21,6 +21,8 @@ class Document:
                 cuis=[m.cui],
                 ctx_l=ctx_l,
                 ctx_r=ctx_r,
+                start=m.start,
+                end=m.end
             )
 
             mentions.append(cm)
