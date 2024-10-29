@@ -1,3 +1,5 @@
+import argparse
+
 import os 
 
 import spacy
@@ -48,12 +50,12 @@ def run_evaluation(data, nlp, omim_to_cui, mesh_to_cui):
 
     return accuracy_score(labels, map_to_cuis(predictions, omim_to_cui, mesh_to_cui))
 
-def main():
+def main(args):
     bc5dr_tuples = BC5CDR().generate_data("test")
 
     ncbi_tuples = NCBI().generate_data("test")
 
-    semeval_tuples = Semeval("nerdata/").generate_data("test")
+    semeval_tuples = Semeval(args.semeval_data_path).generate_data("test")
 
     nlp = spacy.load("en_core_sci_sm")
 
@@ -104,4 +106,8 @@ def main():
     print("Semeval", run_evaluation(semeval_tuples, nlp, omim_to_cui, mesh_to_cui))
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("semeval_data_path")
+    args = parser.parse_args()
+
+    main(args)

@@ -1,3 +1,5 @@
+import argparse
+
 import os 
 
 from quickumls import QuickUMLS
@@ -44,14 +46,14 @@ def run_evaluation(data, matcher, omim_to_cui, mesh_to_cui):
     
     return accuracy_score(labels, map_to_cuis(predictions, omim_to_cui, mesh_to_cui))
 
-def main():
+def main(args):
     bc5dr_tuples = BC5CDR().generate_data("test")
 
     ncbi_tuples = NCBI().generate_data("test")
 
-    semeval_tuples = Semeval("nerdata/").generate_data("test")
+    semeval_tuples = Semeval(args.semeval_data_path).generate_data("test")
 
-    matcher = QuickUMLS("/data/user/home/ksasse/code/normalization/quickumls_data")
+    matcher = QuickUMLS(args.quick_umls_data)
 
     user = os.environ["UMLS_USER"]
     pwd = os.environ["UMLS_PWD"]
@@ -98,4 +100,9 @@ def main():
     print("Semeval", run_evaluation(semeval_tuples, matcher, omim_to_cui, mesh_to_cui))
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("semeval_data_path")
+    parser.add_argument("quick_umls_data")
+    args = parser.parse_args()
+
+    main(args)

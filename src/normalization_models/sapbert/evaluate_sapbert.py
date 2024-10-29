@@ -176,7 +176,7 @@ def map_to_cuis(items, omim_to_cui, mesh_to_cui):
     
     return new_items
 
-def main():
+def main(args):
     user = os.environ["UMLS_USER"]
     pwd = os.environ["UMLS_PWD"]
     database = os.environ["UMLS_DATABASE_NAME"]
@@ -206,7 +206,7 @@ def main():
 
     train_ncbi_tuples = NCBI().generate_data("train")
 
-    train_semeval_tuples = Semeval("nerdata/").generate_data("train")
+    train_semeval_tuples = Semeval(args.semeval_data_path).generate_data("train")
 
     train_mapped_bc5dr_cuis = map_to_cuis([x[1] for x in train_bc5dr_tuples], omim_to_cui, mesh_to_cui)
 
@@ -227,7 +227,7 @@ def main():
 
     test_ncbi_tuples = NCBI().generate_data("test")
 
-    test_semeval_tuples = Semeval("nerdata/").generate_data("test")
+    test_semeval_tuples = Semeval(args.semeval_data_path).generate_data("test")
 
     test_mapped_bc5dr_cuis = map_to_cuis([x[1] for x in test_bc5dr_tuples], omim_to_cui, mesh_to_cui)
 
@@ -255,7 +255,7 @@ def main():
     print("NCBI", run_evaluation(train_ncbi_tuples, test_ncbi_tuples, tokenizer, model))
     print("Semeval", run_evaluation(train_semeval_tuples, test_semeval_tuples, tokenizer, model))
 
-    generated_input = "fake_normalization/total_generation_data_meta-llamaLlama-2-13b-chat-hf_matched.csv"
+    generated_input = args.synthetic_data
 
     datasets = [("BC5DR", train_bc5dr_tuples, test_bc5dr_tuples), ("NCBI", train_ncbi_tuples, test_ncbi_tuples), ("Semeval", train_semeval_tuples, test_semeval_tuples)]
 
@@ -274,4 +274,10 @@ def main():
     
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("semeval_data_path")
+    parser.add_argument("synthetic_data")
+
+    args = parser.parse_args()
+
+    main(args)

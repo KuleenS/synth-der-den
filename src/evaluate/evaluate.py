@@ -57,8 +57,6 @@ def main(args):
 
     processed_dataset_output = evaluate_config['processed_dataset_output']
 
-    i2b2_base_path = evaluate_config['i2b2_base_path']
-
     semeval_path = evaluate_config['semeval_path']
 
     mode = evaluate_config['mode']
@@ -89,7 +87,6 @@ def main(args):
     mesh_to_cui = dict(zip(list(df_msh["MSH_CODE"]), list(df_msh["CUI"])))
 
     semeval_to_conll(semeval_path, processed_dataset_output)
-    i2b2_to_conll(i2b2_base_path, processed_dataset_output)
     ncbi_to_conll(processed_dataset_output, omim_to_cui, mesh_to_cui)
     bc5dr_to_conll(processed_dataset_output, omim_to_cui, mesh_to_cui)
 
