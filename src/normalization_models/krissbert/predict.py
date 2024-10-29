@@ -368,8 +368,9 @@ def main(args):
         with open(ann_file_path, "w") as f:
             # Write entities
             for entity in entities:
-                f.write(f"{entity['id']}\t{entity['type']}\t{entity['start']}\t{entity['end']}\t{entity['text']}\n")
-        
+                f.write(f"{entity['id']}\tDISEASE\t{entity['start']}\t{entity['end']}\t{entity['text']}\n")
+                f.write(f"{entity['id'].replace('T', 'N')}\tReference\t{entity['id']}\t{entity['type']}\t{entity['text']}\n")
+
         with open(txt_file_path, "w") as f:
             f.write(" ".join([x[0] for x in conll_data]))
         
