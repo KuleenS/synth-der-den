@@ -1,15 +1,33 @@
-[train]
-training_method = "supervised"
-model="/data/user/ksasse/generation/model/physionet.org/files/clinical-t5/1.0.0/Clinical-T5-Large"
-output_folder="/scratch/ksasse/generation/output/LORAT5LargeSup"
-special_token_path = "/data/user/ksasse/generation/model/replacement.txt"
-extra_token_path = "/data/user/ksasse/generation/model/extratokens.txt"
-train_data="/data/user/ksasse/generation/data/traindata/"
-eval_data="/data/user/ksasse/generation/data/devdata/"
-model_max_length = 2048
-batch_size = 1
-learning_rate = 0.001
-epochs = 12
-warmup_steps = 0
-external_logger = false
-logging_project = "t5-clinical"
+[preprocess]
+semeval_data = ""
+semeval_output_data = ""
+
+[train-llama]
+model=""
+output_folder=""
+special_token_path = ""
+extra_token_path = ""
+train_data=""
+eval_data=""
+learning_rate =
+epochs = 
+[generate]
+output_folder = ""
+model_dir = ""
+[generate.generation_params]
+model_name = ""
+gpus = 
+batch_size = 
+examples_generated = 
+max_length = 
+temperature =
+do_sample= 
+
+[evaluate]
+generated_note_path = ""
+results_output = ""
+model_output=""
+processed_dataset_output = ""
+i2b2_base_path = ""
+semeval_path = ""
+mode =
