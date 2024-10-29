@@ -5,15 +5,12 @@
 ### Semeval 2015 Task 14
 1. Follow steps to access the data here: 
 ```https://alt.qcri.org/semeval2015/task14/index.php?id=data-and-tools```
-2. If the links to access does not work and you have access to the Aurora Research Computer, there is a tar.gz of it in this folder:
-```/home/ksasse/semevaldata```
-3. To prepare the data for T5 run the preprocess pipeline using the config with your semeval data (WIP)
 
 ### UMLS
-You will need UMLS for the T5 data preperation
+You will need UMLS
 1. Follow this website to download UMLS locally: ```https://www.ncbi.nlm.nih.gov/books/NBK9683/``` 
 2. The downloads are here: https://www.nlm.nih.gov/research/umls/licensedcontent/downloads.html
-3. If you can access the Aurora Research Computer, set the credentials in your .env, source them and export them
+3. If you can access already have access, set the credentials in your .env, source them and export them
 ```
 UMLS_USER=<>
 UMLS_PWD=<>
@@ -21,59 +18,210 @@ UMLS_DATABASE_NAME=<>
 UMLS_IP=<>
 ```
 
-## Env Preperation
+### Env Preperation
 Create conda env called `generation` from file with this command
 ```
 conda env create --file environ.yml
 ```
 
-### BERTNER Preperation
-I know this is alot of envs for your machine \
-If you have access to the UAB RC Gitlab and are in the informatics institute please clone https://gitlab.rc.uab.edu/oleaj/uabdeid with this command:
-```
-git clone https://gitlab.rc.uab.edu/oleaj/uabdeid.git
-```
-Follow the steps to install the uabdeid repo to that env
-```
-pip install -e /path/to/uabdeid
-```
-Now you can run all the test bench for bert training (WIP)
+## Scripts 
 
-## Running Train 
-After setting up environment, to run training
-```bash
-python -m src --config config.toml
+### Data Preparation
+To prepare data for LLM training run 
+```
+python src/preprocess/preprocess.py --config config.toml
 ```
 
-The config.toml consists of one section currently `train`. It has parameters
-
-1. `training_method`: `str`: unsupervised or supervised
-2. `model`: `str` : Path to Model folder to load into huggingface or name of model
-3. `output_folder`: `str` : Path of place to store checkpoints
-4. `special_token_path`: `str` : Optional : Path to txt file with tokens every line that need replacing in text before preprocessing
-5. `extra_token_path`: `str` : Optional : Path to txt file with tokens will be added to tokenizer
-6. `train_data` : `str` : Path to csv file for training
-    - File format for unsupervised is one column of text. Each training item is a line
-    - File format for supervised is two column csv, one prompt one output
-7. `eval_data`: `str` : Path to csv file for evaluation
-    - File format for unsupervised is one column of text. Each training item is a line
-    - File format for supervised is two column csv, one prompt one output
-8. `batch_size`: `int`: batch size for model
-9. `learning_rate`: `float`: Learning Rate of Optimizer
-10. `epochs`: `int`: Epochs to train file
-11. `warmup_steps` : `int` : Learning Rate Warmup Steps 
-12. `external_logger`: `bool`: whether to use wandb (**MUST HAVE `WANDB_API_KEY` IN ENV VARIABLES**)
-13. `logging_project`: `str`: name of wandb project
-
-## Running Preprocess (WIP)
-Still in development
-## Running Evaluate (WIP)
-Still in development
+In your `config.toml` file fill out this
+```toml
+[preprocess]
+semeval_data = ""
+semeval_output_data = ""
+```
+- `semeval_data`: input directory of semeval data
+- `semeval_output_data`: output directory of preprocessed semeval data
 
 
+### Training
+To train LLM 
+
+```toml
+[train-llama]
+model=""
+output_folder=""
+special_token_path = ""
+extra_token_path = ""
+train_data=""
+eval_data=""
+learning_rate =
+epochs = 
+```
+
+- `model` : model name you want to train 
+- `output_folder`: model save path 
+- `special_token_path`: path to file with each line being a special token to add to the tokenizer
+- `extra_token_path` : path to file with each line being a special token to remove from the texts
+- `train_data`: path to train data folder csvs with two columns 
+- `eval_data`: path to evaluation data folder csvs with two columns 
+- `learning_rate` : floating point learning rate for model
+- `epochs` : how many epochs to finetune
+
+### Generation
+To generate synthetic data run 
+
+```
+python src/generate/generate.py --config config.toml
+```
+In your `config.toml` file fill out this
+```toml
+[generate]
+output_folder = ""
+model_dir = ""
+[generate.generation_params]
+model_name = ""
+gpus = 
+batch_size = 
+examples_generated = 
+max_length = 
+temperature =
+do_sample= 
+```
+- `output_folder`: output folder for generation
+- `model_dir`: trained model folder
+- `model_name`: trained model type
+- `gpus`: number of gpus needed
+- `batch_size`: batch size for model
+- `examples_generated`: number of examples generated per input
+- `max_length`: Max number of new tokens generated
+- `temperature`: Temperature of sampling
+- `do_sample`: Sample or Deterministic Generation
 
 
+To clean up synthetic data run
+
+```
+python src/generate/postprocess_data.py <input> <output>
+```
+- `input`: input csv
+- `output`: output csv
+
+### Downstream Task
+
+#### NER
+
+To evaluate NER run 
+```
+python src/evaluate/evaluate.py --config config.toml
+```
+
+In your `config.toml` file fill out this
+```toml
+[evaluate]
+generated_note_path = ""
+results_output = ""
+model_output=""
+processed_dataset_output = ""
+semeval_path = ""
+mode = 0
+```
+- `generated_note_path`: path to generated nodes
+- `results_output`: outputs for the results
+- `model_output`: save dir for trained models
+- `processed_dataset_output`: output path to save processed datasets
+- `semeval_path`: Semeval Data Path Folder
+- `mode`: how to add the synthetic data
+    - options: 
+            -  No Synthetic = 0
+            -  All Synthetic = 1
+            -  Ideal Synthetic = 2
+            -  Real World Synthetic = 3
+            -  Ablation Synthetic = 4
+
+To evaluate normalization run 
+#### NEN
+
+##### KrissBERT
+To run the evaluation, you need to run two parts
+```
+python src/normalization_models/krissbert/generate_prototypes.py <semeval_data_path> <quick_umls_data>
+```
+- `dataset` which dataset (options: semeval, bc5dr, ncbi)
+- `output`: output directory for embeddings
+- `semeval_input`: path to semeval data (required for semeval dataset)
+- `generated_input`: path to synthetic data csv
+- `mode`: which mode to add your data into the model 
+    - options: 
+        -  No Synthetic = 0
+        -  All Synthetic = 1
+        -  Ideal Synthetic = 2
+        -  Real World Synthetic = 3
+        -  Ablation Synthetic = 4
+
+```
+python src/normalization_models/krissbert/run_entity_linking.py --config config.toml
+```
+In your `config.toml` file fill out this for Semeval
+```toml
+# path to pretrained model and tokenizer
+model = "microsoft/BiomedNLP-KRISSBERT-PubMed-UMLS-EL"
+test_data= "<path to semeval data folder>"
+dataset = "semeval"
+# paths to encoded data
+encoded_files= [
+  "<path to embeddings generated by previous step>"
+]
+
+encoded_umls_files= []
+entity_list_names= "<path to cuis generated by previous step>"
+seed= 12345
+batch_size= 256
+max_length= 64
+num_retrievals= 100
+top_ks= [1, 5, 50, 100]
+```
+
+For other datasets fill out
+```toml
+model = "microsoft/BiomedNLP-KRISSBERT-PubMed-UMLS-EL"
+dataset = "<dataset>"
+# paths to encoded data
+encoded_files= [
+  "<path to embeddings generated by previous step>"
+]
+
+encoded_umls_files= []
+entity_list_names= "<path to cuis generated by previous step>"
+seed= 12345
+batch_size= 256
+max_length= 64
+num_retrievals= 100
+top_ks= [1, 5, 50, 100]
+```
+
+##### SapBERT
+To run the evaluation
+```
+python src/normalization_models/sapbert/evaluate_sapbert.py <semeval_data_path> <quick_umls_data>
+```
+- `semeval_data_path`: path to semeval data
+- `synthetic_data`: path to synthetic data csv
 
 
+##### QuickUMLS
+To evaluate QuickUMLS, you must first prepare the data for it like described in their repo. 
+
+To run the evaluation
+```
+python src/normalization_models/quickumls/evaluate_quickumls.py <semeval_data_path> <quick_umls_data>
+```
+- `semeval_data_path`: path to semeval data
+- `quick_umls_data`: path to processed quick umls data
+
+##### SciSpacy
+To run the evaluation
+```
+python src/normalization_models/scispacy/evaluate_scispacy.py <semeval_data_path>
+```
+- `semeval_data_path`: path to semeval data
 
 
