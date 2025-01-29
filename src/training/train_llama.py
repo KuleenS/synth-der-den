@@ -30,7 +30,7 @@ def main(args):
     config_path = args.config
 
     with open(config_path, "rb") as f:
-        config = tomllib.load(f)
+        config = tomli.load(f)
 
     train_config = config['train-llama']
 
