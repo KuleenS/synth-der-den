@@ -135,7 +135,7 @@ python -m src.generate.postprocess_data <input> <output>
 
 #### NER
 
-First before running NER you must first split your semeval
+First before running NER/NEN you must first split your semeval
 
 ```python src/split_semeval.py <semeval_folder> <output_semeval_split>```
 
@@ -154,18 +154,18 @@ processed_dataset_output = ""
 semeval_path = ""
 mode = 0
 ```
-- `generated_note_path`: path to generated nodes
+- `generated_note_path`: path to postprocessed generated csv
 - `results_output`: outputs for the results
 - `model_output`: save dir for trained models
 - `processed_dataset_output`: output path to save processed datasets
 - `semeval_path`: Semeval Data Path Folder that is split from above
 - `mode`: how to add the synthetic data
     - options: 
-            -  No Synthetic = 0
-            -  All Synthetic = 1
-            -  Ideal Synthetic = 2
-            -  Real World Synthetic = 3
-            -  Ablation Synthetic = 4
+        -  No Synthetic = 0
+        -  Naive Synthetic = 1
+        -  Ideal Synthetic = 2
+        -  Supplemental Synthetic = 3
+        -  Ablation Synthetic = 4
 
 To evaluate normalization run 
 #### NEN
@@ -173,18 +173,18 @@ To evaluate normalization run
 ##### KrissBERT
 To run the evaluation, you need to run two parts
 ```
-python -m src.normalization_models.krissbert.generate_prototypes <semeval_data_path> <quick_umls_data>
+python -m src.normalization_models.krissbert.generate_prototypes <dataset> <output> <semeval_input> <generated_input> <mode>
 ```
 - `dataset` which dataset (options: semeval, bc5dr, ncbi)
 - `output`: output directory for embeddings
 - `semeval_input`: path to semeval data that is split from above
-- `generated_input`: path to synthetic data csv
+- `generated_input`: path to postprocessed synthetic data csv
 - `mode`: which mode to add your data into the model 
     - options: 
         -  No Synthetic = 0
-        -  All Synthetic = 1
+        -  Naive Synthetic = 1
         -  Ideal Synthetic = 2
-        -  Real World Synthetic = 3
+        -  Supplemental Synthetic = 3
         -  Ablation Synthetic = 4
 
 ```
@@ -231,10 +231,10 @@ top_ks= [1, 5, 50, 100]
 ##### SapBERT
 To run the evaluation
 ```
-python -m src.normalization_models.sapbert.evaluate_sapbert <semeval_data_path> <quick_umls_data>
+python -m src.normalization_models.sapbert.evaluate_sapbert <semeval_data_path> <synthetic_data>
 ```
 - `semeval_data_path`: path to semeval data
-- `synthetic_data`: path to synthetic data csv
+- `synthetic_data`: path to postprocessed synthetic data csv
 
 
 ##### QuickUMLS
