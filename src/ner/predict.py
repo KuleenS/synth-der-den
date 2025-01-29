@@ -4,10 +4,6 @@ import csv
 
 import os
 
-import datasets
-
-import evaluate
-
 import torch
 
 from torch.utils.data import DataLoader
