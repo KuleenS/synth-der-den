@@ -3,6 +3,7 @@ import os
 import tomli
 
 from llama import LLaMaGenerate
+from input_data import InputData
 
 def main(args):
 
@@ -12,9 +13,9 @@ def main(args):
 
     generation_config = config['generate']
 
-    split = generation_config["split"]
-
     output_folder = generation_config['output_folder']
+
+    input_file = generation_config['input_file']
 
     model_dir = generation_config['model_dir']
 
@@ -24,7 +25,12 @@ def main(args):
 
     os.makedirs(output_folder, exist_ok=True)
 
-    llama_umls_data = LLaMaGenerate(os.path.join(output_folder, f"input_data{split}_2.csv"), os.path.join(output_folder, f"generation_data_{decoder_name}{split}_2.csv"), model_dir, generation_params)
+    if not os.path.exists(input_file):
+        input_data = InputData(input_file)
+
+        input_data.generate()
+
+    llama_umls_data = LLaMaGenerate(input_file, os.path.join(output_folder, f"generation_data_{decoder_name}.csv"), model_dir, generation_params)
 
     llama_umls_data.generate()
 
