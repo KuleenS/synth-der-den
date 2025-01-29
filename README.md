@@ -135,6 +135,10 @@ python -m src.generate.postprocess_data <input> <output>
 
 #### NER
 
+First before running NER you must first split your semeval
+
+```python src/split_semeval.py <semeval_folder> <output_semeval_split>```
+
 To evaluate NER run 
 ```
 python -m src.evaluate.evaluate --config config.toml
@@ -154,7 +158,7 @@ mode = 0
 - `results_output`: outputs for the results
 - `model_output`: save dir for trained models
 - `processed_dataset_output`: output path to save processed datasets
-- `semeval_path`: Semeval Data Path Folder
+- `semeval_path`: Semeval Data Path Folder that is split from above
 - `mode`: how to add the synthetic data
     - options: 
             -  No Synthetic = 0
@@ -173,7 +177,7 @@ python -m src.normalization_models.krissbert.generate_prototypes <semeval_data_p
 ```
 - `dataset` which dataset (options: semeval, bc5dr, ncbi)
 - `output`: output directory for embeddings
-- `semeval_input`: path to semeval data (required for semeval dataset)
+- `semeval_input`: path to semeval data that is split from above
 - `generated_input`: path to synthetic data csv
 - `mode`: which mode to add your data into the model 
     - options: 
@@ -256,10 +260,11 @@ python -m src.normalization_models.scispacy.evaluate_scispacy.py <semeval_data_p
 There are multple ways to do turn this into a pipeline method in your system: pure bash script and docker container
 
 ### Bash Script
-To run the Docker container one must do 
+To run the bash procsesing pipeline one must do 
 
 1. Train BioBERT 
 2. Train KrissBERT (python -m src.normalization_models.krissbert.generate_prototypes)
+3. Run bash script `./processing_pipeline.sh <input_folder> <output_folder> <bert_folder> <krissbert_folder>`
 
 ### Docker Container
 
@@ -267,4 +272,6 @@ To run the Docker container one must do
 
 1. Train BioBERT 
 2. Train KrissBERT (python -m src.normalization_models.krissbert.generate_prototypes)
-3. 
+3. Build the Docker `docker build -t synthderdenpipeline .`
+4. Run the Docker  `docker run --gpus all -v $(pwd):/app/ synthderdenpipeline <input_folder> <output_folder> <bert_folder> <krissbert_folder>`
+
