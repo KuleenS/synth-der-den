@@ -222,6 +222,10 @@ class GenerateSemevalData:
 
         cnx: mysql.connector.MySQLConnection = mysql.connector.connect(user=self.user, password=self.pwd, database=self.database, host=self.ip)
 
+        os.makedirs(os.path.join(self.output_folder, 'traindata'), exist_ok=True)
+        os.makedirs(os.path.join(self.output_folder, 'devdata'), exist_ok=True)
+        os.makedirs(os.path.join(self.output_folder, 'testdata'), exist_ok=True)
+
         self.process_files(train_filenames, 'traindata', nlp, cnx)
 
         self.process_files(dev_filenames, 'devdata', nlp, cnx)
