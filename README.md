@@ -19,17 +19,36 @@ UMLS_IP=<>
 ```
 
 ### Env Preperation
+
+#### conda
 Create conda env called `generation` from file with this command
 ```
 conda env create --file environ.yml
 ```
+
+#### pip (fixed)
+To create an environment with the packages and their versions I used. First, create a conda env 
+```
+conda create -n generation python=3.10
+pip install -r requirements-fixed.txt
+```
+
+#### pip (free)
+To create an environment with the packages I used but not their versions. First, create a conda env 
+```
+conda create -n generation python=3.10
+pip install -r requirements.txt
+```
+
+#### QuickUMLS
+To set up quickumls for the environment follow [this](https://github.com/Georgetown-IR-Lab/QuickUMLS?tab=readme-ov-file#installation)
 
 ## Scripts 
 
 ### Data Preparation
 To prepare data for LLM training run 
 ```
-python src/preprocess/preprocess.py --config config.toml
+python -m src.preprocess.preprocess --config config.toml
 ```
 
 In your `config.toml` file fill out this
@@ -45,6 +64,11 @@ semeval_output_data = ""
 ### Training
 To train LLM 
 
+```
+python -m src.training.train_llama --config config.toml
+```
+
+In your `config.toml` file fill out this
 ```toml
 [train-llama]
 model=""
@@ -70,13 +94,14 @@ epochs =
 To generate synthetic data run 
 
 ```
-python src/generate/generate.py --config config.toml
+python -m src.generate.generate --config config.toml
 ```
 In your `config.toml` file fill out this
 ```toml
 [generate]
 output_folder = ""
 model_dir = ""
+input_file = ""
 [generate.generation_params]
 model_name = ""
 gpus = 
@@ -89,6 +114,7 @@ do_sample=
 - `output_folder`: output folder for generation
 - `model_dir`: trained model folder
 - `model_name`: trained model type
+- `input_file`: Input file to generate
 - `gpus`: number of gpus needed
 - `batch_size`: batch size for model
 - `examples_generated`: number of examples generated per input
@@ -100,7 +126,7 @@ do_sample=
 To clean up synthetic data run
 
 ```
-python src/generate/postprocess_data.py <input> <output>
+python -m src.generate.postprocess_data <input> <output>
 ```
 - `input`: input csv
 - `output`: output csv
@@ -111,7 +137,7 @@ python src/generate/postprocess_data.py <input> <output>
 
 To evaluate NER run 
 ```
-python src/evaluate/evaluate.py --config config.toml
+python -m src.evaluate.evaluate --config config.toml
 ```
 
 In your `config.toml` file fill out this
@@ -143,7 +169,7 @@ To evaluate normalization run
 ##### KrissBERT
 To run the evaluation, you need to run two parts
 ```
-python src/normalization_models/krissbert/generate_prototypes.py <semeval_data_path> <quick_umls_data>
+python -m src.normalization_models.krissbert.generate_prototypes <semeval_data_path> <quick_umls_data>
 ```
 - `dataset` which dataset (options: semeval, bc5dr, ncbi)
 - `output`: output directory for embeddings
@@ -158,9 +184,9 @@ python src/normalization_models/krissbert/generate_prototypes.py <semeval_data_p
         -  Ablation Synthetic = 4
 
 ```
-python src/normalization_models/krissbert/run_entity_linking.py --config config.toml
+python -m src.normalization_models.krissbert.run_entity_linking --config nen_config.toml
 ```
-In your `config.toml` file fill out this for Semeval
+In your `nen_config.toml` file fill out this for Semeval
 ```toml
 # path to pretrained model and tokenizer
 model = "microsoft/BiomedNLP-KRISSBERT-PubMed-UMLS-EL"
@@ -201,7 +227,7 @@ top_ks= [1, 5, 50, 100]
 ##### SapBERT
 To run the evaluation
 ```
-python src/normalization_models/sapbert/evaluate_sapbert.py <semeval_data_path> <quick_umls_data>
+python -m src.normalization_models.sapbert.evaluate_sapbert <semeval_data_path> <quick_umls_data>
 ```
 - `semeval_data_path`: path to semeval data
 - `synthetic_data`: path to synthetic data csv
@@ -212,7 +238,7 @@ To evaluate QuickUMLS, you must first prepare the data for it like described in 
 
 To run the evaluation
 ```
-python src/normalization_models/quickumls/evaluate_quickumls.py <semeval_data_path> <quick_umls_data>
+python -m src.normalization_models.quickumls.evaluate_quickumls <semeval_data_path> <quick_umls_data>
 ```
 - `semeval_data_path`: path to semeval data
 - `quick_umls_data`: path to processed quick umls data
@@ -220,8 +246,25 @@ python src/normalization_models/quickumls/evaluate_quickumls.py <semeval_data_pa
 ##### SciSpacy
 To run the evaluation
 ```
-python src/normalization_models/scispacy/evaluate_scispacy.py <semeval_data_path>
+python -m src.normalization_models.scispacy.evaluate_scispacy.py <semeval_data_path>
 ```
 - `semeval_data_path`: path to semeval data
 
 
+## Pipeline/Inference
+
+There are multple ways to do turn this into a pipeline method in your system: pure bash script and docker container
+
+### Bash Script
+To run the Docker container one must do 
+
+1. Train BioBERT 
+2. Train KrissBERT (python -m src.normalization_models.krissbert.generate_prototypes)
+
+### Docker Container
+
+To run the Docker container one must do 
+
+1. Train BioBERT 
+2. Train KrissBERT (python -m src.normalization_models.krissbert.generate_prototypes)
+3. 
