@@ -14,7 +14,6 @@ import torch
 
 import mysql.connector as mariadb
 
-from src.evaluate.process_i2b2 import i2b2_to_conll
 from src.evaluate.process_ncbi import ncbi_to_conll
 from src.evaluate.process_bc5dr import bc5dr_to_conll
 from src.evaluate.process_semeval import semeval_to_conll
