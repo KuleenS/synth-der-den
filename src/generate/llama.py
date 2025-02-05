@@ -22,7 +22,7 @@ class LLaMaGenerate:
         self.gpus = model_params['gpus']
         self.examples_generated = model_params['examples_generated']
 
-        self.gen_config = GenerationConfig.from_pretrained("meta-llama/Llama-2-13b-hf")
+        self.gen_config = GenerationConfig.from_pretrained(self.model_dir)
 
         self.gen_config.max_new_tokens = 256
     
