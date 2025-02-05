@@ -9,19 +9,25 @@ special_token_path = ""
 extra_token_path = ""
 train_data=""
 eval_data=""
-learning_rate =
-epochs = 
+learning_rate = 1e-5
+epochs = 3
 [generate]
 output_folder = ""
+synthetic_data = ["template", "synonym"] 
+[generate.llm]
 model_dir = ""
-[generate.generation_params]
+input_file = "data/synthetic"
+[generate.llm.generation_params]
 model_name = ""
-gpus = 
-batch_size = 
-examples_generated = 
-max_length = 
-temperature =
-do_sample= 
+gpus = 1
+batch_size = 32
+examples_generated = 5
+max_length = 256
+temperature = 1.2
+do_sample= true
+[generate.synonym]
+dataset = "bc5cdr"
+semeval_folder = "data/semeval_split/train"
 
 [evaluate]
 generated_note_path = ""
@@ -30,4 +36,4 @@ model_output=""
 processed_dataset_output = ""
 i2b2_base_path = ""
 semeval_path = ""
-mode =
+mode = ""
