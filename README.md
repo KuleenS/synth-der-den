@@ -10,7 +10,8 @@
 You will need UMLS
 1. Follow this website to download UMLS locally: ```https://www.ncbi.nlm.nih.gov/books/NBK9683/``` 
 2. The downloads are here: https://www.nlm.nih.gov/research/umls/licensedcontent/downloads.html
-3. If you can access already have access, set the credentials in your .env, source them and export them
+   
+If you can access UMLS and have it set up, set the credentials in your `.env`, source them and export them
 ```
 UMLS_USER=<>
 UMLS_PWD=<>
