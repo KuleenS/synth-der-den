@@ -2,10 +2,10 @@ import argparse
 import os
 import tomli
 
-from llama import LLaMaGenerate
-from input_data import InputData
-from synonym_replacement import SynonymReplacement
-from template import Templating
+from src.generate.llama import LLaMaGenerate
+from src.generate.input_data import InputData
+from src.generate.synonym_replacement import SynonymReplacement
+from src.generate.template import Templating
 
 def main(args):
 
@@ -46,13 +46,14 @@ def main(args):
         
         elif synth_data == "synonym":
 
-            dataset = generation_config["synonym"]["dataset"]
+            datasets = generation_config["synonym"]["datasets"]
 
             semeval_folder = generation_config["synonym"]["semeval_folder"]
 
-            syn_data = SynonymReplacement(dataset, os.path.join(output_folder, f"syn_replacement_data.csv"), semeval_folder)
+            for dataset in datasets:
+                syn_data = SynonymReplacement(dataset, os.path.join(output_folder, f"syn_replacement_data_{dataset}.csv"), semeval_folder)
 
-            syn_data.generate()
+                syn_data.generate()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
