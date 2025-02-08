@@ -7,7 +7,7 @@ import pandas as pd
 
 from tqdm import tqdm
 
-from utils import get_umls_data
+from src.utils import get_umls_data
 
 class InputData:
     def __init__(self, output_file: str) -> None:
