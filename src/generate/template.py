@@ -5,8 +5,7 @@ import csv
 import os
 
 import mysql.connector
-import pandas as pd 
-import polars
+import polars as pl
 
 
 from tqdm import tqdm
@@ -29,7 +28,7 @@ Plan: Proceed with necessary assessments and initiate appropriate care as indica
 
     def generate(self):
 
-        if self.umls_folder is not None:
+        if self.umls_folder is None:
 
             cnx = mysql.connector.connect(user=self.user, password=self.pwd, database=self.database, host=self.ip)
 
@@ -40,7 +39,7 @@ Plan: Proceed with necessary assessments and initiate appropriate care as indica
             AND TUI IN ('T047','T020','T190','T049','T019','T050','T033','T037','T048','T191','T046','T184') \
             GROUP BY MRCONSO.CUI ORDER BY MRCONSO.CUI;") 
 
-            df = pd.read_sql(query, con=cnx)
+            df = pl.read_database(query, connection=cnx)
         
         else:
             root = Path(self.umls_folder)
@@ -49,26 +48,29 @@ Plan: Proceed with necessary assessments and initiate appropriate care as indica
 
             mrsty = root / "MRSTY.RRF"
 
-            MRCONSO = polars.read_csv(mrconso, separator="|", has_header=False, encoding="utf8", quote_char=None)
+            MRCONSO = pl.read_csv(mrconso, separator="|", has_header=False, encoding="utf8", quote_char=None)
 
-            MRSTY = polars.read_csv(mrsty, separator="|", has_header=False, encoding="utf8", quote_char=None)
+            MRSTY = pl.read_csv(mrsty, separator="|", has_header=False, encoding="utf8", quote_char=None)
 
             MRCONSO.columns = ["CUI", "LAT", "TS", "LUI", "STT", "SUI", "ISPREF", "AUI", "SAUI", "SCUI", "SDUI", "SAB", "TTY", "CODE", "STR", "SRL", "SUPPRESS", "CVF", "BLANK"]
 
             MRSTY.columns = ["CUI", "TUI", "STN", "STY", "ATUI", "CVF", "BLANK"]
 
-            MRSTY_FILTER = MRSTY.filter(polars.col('TUI').str.contains_any(['T047','T020','T190','T049','T019','T050','T033','T037','T048','T191','T046','T184']))[["CUI", "TUI"]]
+            MRSTY_FILTER = MRSTY.filter(pl.col('TUI').str.contains_any(['T047','T020','T190','T049','T019','T050','T033','T037','T048','T191','T046','T184']))[["CUI", "TUI"]]
 
-            MRCONSO_FILTER = MRCONSO.filter((polars.col("LAT") == "ENG") & (polars.col("ISPREF") == "Y"))[["CUI", "STR"]]
+            MRCONSO_FILTER = MRCONSO.filter((pl.col("LAT") == "ENG") & (pl.col("ISPREF") == "Y"))[["CUI", "STR"]]
 
             MRCONSO_JOIN_MRSTY = MRCONSO_FILTER.join(MRSTY_FILTER, left_on="CUI", right_on="CUI", how="inner")
 
             df = MRCONSO_JOIN_MRSTY.unique("CUI")
+
+            print(df)
 
         with open(self.output_file, "w") as f:
             csv_file = csv.writer(f)
 
             csv_file.writerow(["cui", "matched_output"])
 
-            for index, row in tqdm(df.iterrows()):
+            for row in tqdm(df.iter_rows(named=True)):
+                
                 csv_file.writerow([row["CUI"], self.template.format(disease=row["STR"])])

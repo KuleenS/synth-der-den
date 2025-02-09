@@ -1,10 +1,16 @@
 import csv
 
+import copy
+
 import os
 
 from typing import List
 
+import medspacy
+
 import pandas as pd
+
+import polars as pl
 
 import numpy as np
 
@@ -14,6 +20,7 @@ from datasets import load_dataset
 
 from tqdm import tqdm
 
+from intervaltree import IntervalTree
 
 CUI_FIX = {"C1883552":"C0004093",
 "C0021311":"C0009450",
@@ -59,14 +66,21 @@ class SynonymReplacement:
         self.history_file = history_file
 
         if self.history_file is not None:
-            self.history_df = pd.read_csv(history_file, sep="|", header=None)
+            self.history_df = pl.read_csv(history_file, separator="|", has_header=False, encoding="utf8", quote_char=None, schema_overrides={"column_9": pl.String})
+
+            self.history_df.columns = ["CUI", "LAT", "TS", "LUI", "STT", "SUI", "ISPREF", "AUI", "SAUI", "SCUI", "SDUI", "SAB", "TTY", "CODE", "STR", "SRL", "SUPPRESS", "CVF", "DATE"]
+
+            self.history_df = self.history_df.filter((pl.col("LAT") == "ENG"))[["CUI","SAB", "CODE", "STR"]]
+
         else:
             self.history_df = None
 
         if mrconso_file is not None:
-            mrconso_file = pd.read_csv(mrconso_file, sep="|", header=None)
+            mrconso = pl.read_csv(mrconso_file, separator="|", has_header=False, encoding="utf8", quote_char=None)
 
-            df = mrconso_file[[0,11,13,14]]
+            mrconso.columns = ["CUI", "LAT", "TS", "LUI", "STT", "SUI", "ISPREF", "AUI", "SAUI", "SCUI", "SDUI", "SAB", "TTY", "CODE", "STR", "SRL", "SUPPRESS", "CVF", "BLANK"]
+
+            df = mrconso.filter((pl.col("LAT") == "ENG"))[["CUI","SAB", "CODE", "STR"]]
 
         else:
 
@@ -79,9 +93,9 @@ class SynonymReplacement:
                 user=user, password=pwd, database=database, host=ip
             )
 
-            df = pd.read_sql(
-                "SELECT CUI, SAB, CODE, STR FROM MRCONSO",
-                con=mariadb_connection,
+            df = pl.read_database(
+                "SELECT CUI, SAB, CODE, STR FROM MRCONSO WHERE LAT='ENG'",
+                connection=mariadb_connection,
             )
 
         df.columns = ["CUI", "SAB", "CODE", "STR"]
@@ -90,7 +104,7 @@ class SynonymReplacement:
 
         self.cui_to_strings = dict()
 
-        for _, row in df.iterrows():
+        for row in df.iter_rows(named=True):
             cui_row = row["CUI"]
             cui_str = row["STR"]
 
@@ -106,6 +120,8 @@ class SynonymReplacement:
                 str_set.add(cui_str)
             
             self.cui_to_strings[cui_row] = str_set
+        
+        self.nlp = medspacy.load()
     
     def _split_offsets(self, string_input: str) -> np.ndarray:
         return np.array([x.split('-') for x in string_input.split(',')]).astype(int)
@@ -114,7 +130,7 @@ class SynonymReplacement:
         if cui in self.cui_to_strings:
             return list(self.cui_to_strings[cui])
         elif self.history_df is not None:
-            data = list(self.history_df[self.history_df[0] == cui][14])
+            data = list(self.history_df.filter(pl.col("CUI") == cui)["STR"])
 
             if len(data) == 0:
                 raise ValueError(f"{cui} does not exist in history")
@@ -124,13 +140,49 @@ class SynonymReplacement:
         else:
             raise ValueError(f"{cui} does not exist in cui to string")
 
-    def _syn_replace(self, text: str, start: int, end: int, syns: List[str]) -> List[str]:
+    def _syn_replace(self, doc, start: int, end: int, syns: List[str]) -> List[str]:
+        sentences = [(sent.start, sent.end, i) for i, sent in enumerate(doc.sents)]
+
+        sentence_tree = IntervalTree.from_tuples(sentences)
+
+        span = doc.char_span(start,end, alignment_mode='expand')
+
+        token_index_start, token_index_end = span.start, span.end
+        
+        if token_index_start == token_index_end:
+            sentences_containing_mention = [tuple(x) for x in list(sentence_tree[token_index_start])]
+        else:
+            sentences_containing_mention = [tuple(x) for x in list(sentence_tree[token_index_start: token_index_end])]
+        
+        left_bound_idx = max(min(sentences_containing_mention)[2]-2,0)
+        right_bound_idx = min(max(sentences_containing_mention)[2]+2,len(sentence_tree))
+
+        sentence_idxs = sentences[left_bound_idx:right_bound_idx]
+
+        left_bound = min(sentence_idxs)[0]
+        right_bound = max(sentence_idxs)[1]
+
+        surrounding_sentences = [tuple(x) for x in list(sentence_tree[left_bound:right_bound])]
+
+        left_surronding_bound_token = min(surrounding_sentences)[0]
+        left_surronding_bound_character = doc[left_surronding_bound_token].idx
+
+        right_surronding_bound_token = max(surrounding_sentences)[1]
+
+        if right_surronding_bound_token == len(doc):
+            right_surronding_bound_token -= 1
+
+        text = doc[left_surronding_bound_token:right_surronding_bound_token].text
+
+        start = start-left_surronding_bound_character
+
+        end = end-left_surronding_bound_character
 
         replaced_texts = [text]
 
         for syn in syns:
 
-            new_text = replaced_texts[0][:start] + f' <1CUI> ' + syn + f' </1CUI> ' + replaced_texts[0][end:]
+            new_text = copy.copy(replaced_texts[0][:start]) + f' <1CUI> ' + syn + f' </1CUI> ' + copy.copy(replaced_texts[0][end:])
             
             replaced_texts.append(new_text)
 
@@ -140,12 +192,12 @@ class SynonymReplacement:
         if item in self.code_to_cui:
             return self.code_to_cui[item]
         elif self.history_df is not None:
-            data = self.history_df[self.history_df[10] == item][0]
+            data = self.history_df.filter(pl.col("CODE") == item)["CUI"]
 
             if len(data) == 0:
                 raise ValueError(f"{item} does not exist in history")
             else:
-                return data.iloc[0]
+                return data[0]
 
         else:
             raise ValueError(f"{item} does not exist in omim/mesh to cui")
@@ -164,8 +216,6 @@ class SynonymReplacement:
 
         passages = dataset["train"]["passages"]
 
-        number_of_cuis = 0
-
         with open(self.output_file, "w") as f:
 
             csv_file = csv.writer(f)
@@ -176,6 +226,8 @@ class SynonymReplacement:
                 text = passage[0]["text"]+ " " + passage[1]["text"]
 
                 entities = passage[0]["entities"]
+
+                doc = self.nlp(text)
 
                 for entity in entities:
                     if entity["type"] == "Disease" and len(entity["normalized"]) != 0:
@@ -190,7 +242,7 @@ class SynonymReplacement:
 
                             synoynms = self._get_syn(mapped_cui)
 
-                            syn_replaced_texts = self._syn_replace(text, offset[0], offset[1], synoynms)
+                            syn_replaced_texts = self._syn_replace(doc, offset[0], offset[1], synoynms)
 
                             for syn_replaced_text in syn_replaced_texts:
                                 csv_file.writerow([mapped_cui, syn_replaced_text])
@@ -214,6 +266,8 @@ class SynonymReplacement:
             for title, abstract, list_of_mentions in tqdm(zip(titles, abstracts, mentions)):
                 text = title + " " + abstract
 
+                doc = self.nlp(text)
+
                 for mention in list_of_mentions:
                     if "+" in mention["concept_id"]:
                         concept_ids_split = mention["concept_id"].split("+")
@@ -232,7 +286,7 @@ class SynonymReplacement:
 
                         synoynms = self._get_syn(mapped_cui)
 
-                        syn_replaced_texts = self._syn_replace(text, offset[0], offset[1], synoynms)
+                        syn_replaced_texts = self._syn_replace(doc, offset[0], offset[1], synoynms)
                             
                         for syn_replaced_text in syn_replaced_texts:
                             csv_file.writerow([mapped_cui, syn_replaced_text])
@@ -264,13 +318,15 @@ class SynonymReplacement:
                     cuis = list(df[2])
                     offsets = list(df[1])
 
+                    doc = self.nlp(text_document)
+
                     for cui, offset_group in zip(cuis, offsets):
                         split_offset_group = self._split_offsets(offset_group)
 
                         for offset in split_offset_group:
                             synoynms = self._get_syn(cui)
 
-                            syn_replaced_texts = self._syn_replace(text_document, offset[0], offset[1], synoynms)
+                            syn_replaced_texts = self._syn_replace(doc, offset[0], offset[1], synoynms)
                                 
                             for syn_replaced_text in syn_replaced_texts:
                                 csv_file.writerow([cui, syn_replaced_text])
