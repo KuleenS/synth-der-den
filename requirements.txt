@@ -136,3 +136,4 @@ weasel
 wrapt
 xxhash
 yarl
+polars
