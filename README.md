@@ -19,6 +19,12 @@ UMLS_DATABASE_NAME=<>
 UMLS_IP=<>
 ```
 
+You can export your environment variables using 
+
+```bash
+export $(grep -v '^#' .env | xargs)
+```
+
 ### Env Preperation
 
 #### conda
@@ -55,11 +61,11 @@ python -m src.preprocess.preprocess --config config.toml
 In your `config.toml` file fill out this
 ```toml
 [preprocess]
-semeval_data = ""
-semeval_output_data = ""
+semeval_data = "semeval/"
+semeval_output_data = "processed_semeval/"
 ```
-- `semeval_data`: input directory of semeval data
-- `semeval_output_data`: output directory of preprocessed semeval data
+- `semeval_data`: Path - input directory of semeval data
+- `semeval_output_data`: Path - output directory of preprocessed semeval data
 
 
 ### Training
@@ -72,24 +78,24 @@ python -m src.training.train_llama --config config.toml
 In your `config.toml` file fill out this
 ```toml
 [train-llama]
-model=""
-output_folder=""
-special_token_path = ""
-extra_token_path = ""
-train_data=""
-eval_data=""
-learning_rate =
-epochs = 
+model="meta-llama/Llama-2-13b"
+output_folder="output/"
+special_token_path = "example/special_tokens.txt"
+extra_token_path = "example/extra_tokens.txt"
+train_data="processed_semeval/traindata"
+eval_data="processed_semeval/devdata"
+learning_rate = 2e-5
+epochs = 5
 ```
 
-- `model` : model name you want to train 
-- `output_folder`: model save path 
-- `special_token_path`: path to file with each line being a special token to add to the tokenizer
-- `extra_token_path` : path to file with each line being a special token to remove from the texts
-- `train_data`: path to train data folder csvs with two columns 
-- `eval_data`: path to evaluation data folder csvs with two columns 
-- `learning_rate` : floating point learning rate for model
-- `epochs` : how many epochs to finetune
+- `model` : str -  model name you want to train 
+- `output_folder`: Path - model save path 
+- `special_token_path`: Path - path to file with each line being a special token to add to the tokenizer
+- `extra_token_path` : Path - path to file with each line being a special token to remove from the texts
+- `train_data`: Path - path to train data folder csvs with two columns 
+- `eval_data`: Path - path to evaluation data folder csvs with two columns 
+- `learning_rate` : float - floating point learning rate for model
+- `epochs` : int - how many epochs to finetune
 
 ### Generation
 To generate synthetic data run 
@@ -100,37 +106,26 @@ python -m src.generate.generate --config config.toml
 In your `config.toml` file fill out this
 ```toml
 [generate]
-output_folder = ""
-model_dir = ""
+output_folder = "generation_output/"
+model_dir = "output/"
 input_file = ""
 [generate.generation_params]
-model_name = ""
-gpus = 
-batch_size = 
-examples_generated = 
-max_length = 
-temperature =
-do_sample= 
+gpus = 1
+batch_size = 16
+examples_generated = 5
+max_length = 256
+temperature = 0.7
+do_sample= true
 ```
-- `output_folder`: output folder for generation
-- `model_dir`: trained model folder
-- `model_name`: trained model type
-- `input_file`: Input file to generate
-- `gpus`: number of gpus needed
-- `batch_size`: batch size for model
-- `examples_generated`: number of examples generated per input
-- `max_length`: Max number of new tokens generated
-- `temperature`: Temperature of sampling
-- `do_sample`: Sample or Deterministic Generation
-
-
-To clean up synthetic data run
-
-```
-python -m src.generate.postprocess_data <input> <output>
-```
-- `input`: input csv
-- `output`: output csv
+- `output_folder`: Path - output folder for generation
+- `model_dir`: Path - trained model folder
+- `input_file`: Path - Input file to generate (can be a file that does not exist)
+- `gpus`: int - number of gpus needed
+- `batch_size`: int - batch size for model
+- `examples_generated`: int - number of examples generated per input
+- `max_length`: int - Max number of new tokens generated
+- `temperature`: float - Temperature of sampling
+- `do_sample`: bool - Sample or Deterministic Generation
 
 ### Downstream Task
 
@@ -155,12 +150,12 @@ processed_dataset_output = ""
 semeval_path = ""
 mode = 0
 ```
-- `generated_note_path`: path to postprocessed generated csv
-- `results_output`: outputs for the results
-- `model_output`: save dir for trained models
-- `processed_dataset_output`: output path to save processed datasets
-- `semeval_path`: Semeval Data Path Folder that is split from above
-- `mode`: how to add the synthetic data
+- `generated_note_path`: Path - path to postprocessed generated csv (from src.generate.generate)
+- `results_output`: Path - outputs for the results
+- `model_output`: Path - save dir for trained models
+- `processed_dataset_output`: Path - output path to save processed datasets
+- `semeval_path`: Path - Semeval Data Path Folder that is split from above
+- `mode`: int - how to add the synthetic data
     - options: 
         -  No Synthetic = 0
         -  Naive Synthetic = 1
@@ -176,11 +171,11 @@ To run the evaluation, you need to run two parts
 ```
 python -m src.normalization_models.krissbert.generate_prototypes <dataset> <output> <semeval_input> <generated_input> <mode>
 ```
-- `dataset` which dataset (options: semeval, bc5dr, ncbi)
-- `output`: output directory for embeddings
-- `semeval_input`: path to semeval data that is split from above
-- `generated_input`: path to postprocessed synthetic data csv
-- `mode`: which mode to add your data into the model 
+- `dataset` : str - which dataset (options: semeval, bc5dr, ncbi)
+- `output`: Path - output directory for embeddings
+- `semeval_input`: Path - path to semeval data that is split from above
+- `generated_input`: Path - path to postprocessed synthetic data csv
+- `mode`: int - which mode to add your data into the model 
     - options: 
         -  No Synthetic = 0
         -  Naive Synthetic = 1
@@ -234,8 +229,8 @@ To run the evaluation
 ```
 python -m src.normalization_models.sapbert.evaluate_sapbert <semeval_data_path> <synthetic_data>
 ```
-- `semeval_data_path`: path to semeval data
-- `synthetic_data`: path to postprocessed synthetic data csv
+- `semeval_data_path`: Path - path to semeval data
+- `synthetic_data`: Path - path to postprocessed synthetic data csv
 
 
 ##### QuickUMLS
@@ -245,15 +240,15 @@ To run the evaluation
 ```
 python -m src.normalization_models.quickumls.evaluate_quickumls <semeval_data_path> <quick_umls_data>
 ```
-- `semeval_data_path`: path to semeval data
-- `quick_umls_data`: path to processed quick umls data
+- `semeval_data_path`: Path -  path to semeval data
+- `quick_umls_data`: Path -  path to processed quick umls data
 
 ##### SciSpacy
 To run the evaluation
 ```
 python -m src.normalization_models.scispacy.evaluate_scispacy.py <semeval_data_path>
 ```
-- `semeval_data_path`: path to semeval data
+- `semeval_data_path`: Path -  path to semeval data
 
 
 ## Pipeline/Inference
