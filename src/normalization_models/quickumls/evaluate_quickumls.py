@@ -10,9 +10,9 @@ import pandas as pd
 
 from sklearn.metrics import accuracy_score
 
-from bc5dr import BC5CDR
-from ncbi import NCBI
-from semeval import Semeval
+from src.normalization_models.quickumls.bc5dr import BC5CDR
+from src.normalization_models.quickumls.ncbi import NCBI
+from src.normalization_models.quickumls.semeval import Semeval
 
 def map_to_cuis(items, omim_to_cui, mesh_to_cui):
     

@@ -17,7 +17,6 @@ class LLaMaGenerate:
         self.input_file = input_file
         self.output_file = output_file
         self.model_dir = model_dir
-        self.model_name = model_params['model_name']
         self.batch_size = model_params['batch_size']
         self.gpus = model_params['gpus']
         self.examples_generated = model_params['examples_generated']

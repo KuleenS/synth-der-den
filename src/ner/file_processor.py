@@ -1,16 +1,4 @@
-import csv
-
-import spacy
-
-import pandas as pd
-
-import numpy as np
-
-from intervaltree import IntervalTree
-
 from typing import List, Tuple
-
-from tqdm.auto import tqdm
 
 class FileProcessor:
     def __init__(self):

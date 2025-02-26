@@ -3,7 +3,7 @@ import os
 from argparse import Namespace
 
 
-from ..ner.predict import main as predict
+from src.ner.predict import main as predict
 
 import pandas as pd
 

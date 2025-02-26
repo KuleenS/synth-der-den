@@ -12,9 +12,9 @@ from sklearn.metrics import accuracy_score
 
 from scispacy.linking import EntityLinker
 
-from bc5dr import BC5CDR
-from ncbi import NCBI
-from semeval import Semeval
+from src.normalization_models.scispacy.bc5dr import BC5CDR
+from src.normalization_models.scispacy.ncbi import NCBI
+from src.normalization_models.scispacy.semeval import Semeval
 
 def map_to_cuis(items, omim_to_cui, mesh_to_cui):
     

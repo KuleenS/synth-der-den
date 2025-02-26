@@ -1,7 +1,5 @@
 from enum import Enum
 
-import os
-
 import re
 
 from typing import Tuple, List

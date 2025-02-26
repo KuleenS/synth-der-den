@@ -14,7 +14,7 @@ from peft import LoraConfig
 
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM 
 
-from preprocess import SupervisedDataPreprocess
+from src.training.preprocess import SupervisedDataPreprocess
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
