@@ -109,6 +109,7 @@ In your `config.toml` file fill out this
 output_folder = "generation_output/"
 model_dir = "output/"
 input_file = ""
+umls_folder =
 [generate.generation_params]
 gpus = 1
 batch_size = 16
@@ -120,6 +121,7 @@ do_sample= true
 - `output_folder`: Path - output folder for generation
 - `model_dir`: Path - trained model folder
 - `input_file`: Path - Input file to generate (can be a file that does not exist)
+- `umls_folder`: Path (optional) - path to unzipped version of UMLS Metathesaurus Full Subset [download here](https://www.nlm.nih.gov/research/umls/licensedcontent/umlsknowledgesources.html)
 - `gpus`: int - number of gpus needed
 - `batch_size`: int - batch size for model
 - `examples_generated`: int - number of examples generated per input

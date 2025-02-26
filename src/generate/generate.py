@@ -44,12 +44,14 @@ def main(args):
 
     generation_params = generation_config['generation_params']
 
+    umls_folder = generation_config.get('umls_folder', None)
+
     decoder_name = generation_params["model_dir"].replace("/", "-")
 
     os.makedirs(output_folder, exist_ok=True)
 
     if not os.path.exists(input_file):
-        input_data = InputData(input_file)
+        input_data = InputData(input_file, umls_folder=umls_folder)
 
         input_data.generate()
 
