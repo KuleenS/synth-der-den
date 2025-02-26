@@ -9,19 +9,19 @@ special_token_path = ""
 extra_token_path = ""
 train_data=""
 eval_data=""
-learning_rate =
-epochs = 
+learning_rate = 2e-5
+epochs = 3 
 [generate]
 output_folder = ""
 model_dir = ""
 [generate.generation_params]
 model_name = ""
-gpus = 
-batch_size = 
-examples_generated = 
-max_length = 
-temperature =
-do_sample= 
+gpus = 1
+batch_size = 32
+examples_generated = 5
+max_length = 256
+temperature = 0.7
+do_sample= true
 
 [evaluate]
 generated_note_path = ""
@@ -30,4 +30,4 @@ model_output=""
 processed_dataset_output = ""
 i2b2_base_path = ""
 semeval_path = ""
-mode =
+mode = 0
