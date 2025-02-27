@@ -6,13 +6,13 @@ import tomli
 
 from datasets import Dataset
 
-from transformers import AutoTokenizer, BitsAndBytesConfig, TrainingArguments
+from transformers import AutoTokenizer, BitsAndBytesConfig
 
 import torch
 
 from peft import LoraConfig
 
-from trl import SFTTrainer, DataCollatorForCompletionOnlyLM 
+from trl import SFTTrainer, DataCollatorForCompletionOnlyLM, SFTConfig, ModelConfig
 
 from src.training.preprocess import SupervisedDataPreprocess
 
@@ -93,7 +93,7 @@ def main(args):
     )
 
 
-    training_args = TrainingArguments(
+    training_args = SFTConfig(
         bf16=True, # specify bf16=True instead when training on GPUs that support bf16
         do_eval=True,
         evaluation_strategy="epoch",
@@ -111,11 +111,11 @@ def main(args):
         save_steps=1000,
         per_device_train_batch_size=4,
         report_to="wandb",
+        model_init_kwargs=model_kwargs
     )
 
     trainer = SFTTrainer(
         model=model_path,
-        model_init_kwargs=model_kwargs,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
