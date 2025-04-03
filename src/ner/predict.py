@@ -127,15 +127,14 @@ def main(args):
 
         total_predictions = [id2label[x] if x != " " else " " for x in total_predictions ]
 
-        with open(output_file, "w") as f:
-            writer = csv.writer(f, delimiter=" ", quotechar='"', quoting=csv.QUOTE_MINIMAL)
-
-            writer.writerows(zip(total_tokens, total_predictions))
+        with open(output_file, 'w') as f:
+            for token, label in zip(total_tokens, total_predictions):
+                f.write(f'{token.replace(" ", "")} {label}\n')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--file', required=False)
-    parser.add_argument('--files', nargs="+",required=False)
+    parser.add_argument('--file', required=False, default=None)
+    parser.add_argument('--files', nargs="+",required=False, default=None)
     parser.add_argument('-m','--model_checkpoint')
     parser.add_argument('-c','--conll_output')
 
