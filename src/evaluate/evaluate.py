@@ -18,7 +18,7 @@ from src.evaluate.process_ncbi import ncbi_to_conll
 from src.evaluate.process_bc5dr import bc5dr_to_conll
 from src.evaluate.process_semeval import semeval_to_conll
 from src.evaluate.process_generated import generated_to_conll
-from src.evaluate.process_label_generated import label_generated_conll
+from src.evaluate.process_label_generated import label_generated_conll, combine_with_generated
 
 from src.evaluate.train_scripts import train_baseline_berts, train_baseline_generated_berts, finetune_berts
 
@@ -39,8 +39,6 @@ def set_seed(seed: int = 42) -> None:
 def main(args):
     datasets = ['semeval','bc5dr', 'ncbi']
 
-    filtering = [True]
-
     config_path = args.config
 
     with open(config_path, "rb") as f:
@@ -48,7 +46,7 @@ def main(args):
 
     evaluate_config = config['evaluate']
 
-    generated_note_path = evaluate_config['generated_note_path']
+    generated_note_paths = evaluate_config['generated_note_paths']
 
     results_output = evaluate_config['results_output']
 
@@ -59,6 +57,8 @@ def main(args):
     semeval_path = evaluate_config['semeval_path']
 
     mode = evaluate_config['mode']
+
+    mixed_training = evaluate_config["mixed_training"]
 
     user = os.environ["UMLS_USER"]
     pwd = os.environ["UMLS_PWD"]
@@ -90,9 +90,8 @@ def main(args):
     bc5dr_to_conll(processed_dataset_output, omim_to_cui, mesh_to_cui)
 
     # turns generated notes to conll with different filtering and modes
-    for dataset in datasets:
-        for j in range(len(filtering)):
-            generated_to_conll(generated_note_path, processed_dataset_output, filtering[j], mode, dataset)
+    for generated_note_path, dataset in zip(generated_note_paths, datasets):
+        generated_to_conll(generated_note_path, processed_dataset_output, True, mode, dataset)
     
     for i in range(len(datasets)):
         for seed in range(5):
@@ -104,21 +103,42 @@ def main(args):
             print(f"Run {seed} {random_seed}")
 
             # run the baseline models
-            for i in range(len(datasets)):
-                print(f"training baseline {datasets[i]}")
-                train_baseline_berts(processed_dataset_output, results_output, datasets[i], model_output)
+            print(f"training baseline {datasets[i]}")
+            train_baseline_berts(processed_dataset_output, results_output, datasets[i], model_output)
 
-            # # labels generated notes with those baseline modes
-            
-                print(f"labelling baseline with {datasets[i]} baseline model")
-                label_generated_conll(processed_dataset_output, datasets[i], model_output)
+            print(f"labelling baseline with {datasets[i]} baseline model")
+            label_generated_conll(processed_dataset_output, datasets[i], model_output)
 
-            train_baseline_generated_berts(processed_dataset_output, results_output, model_output, datasets[i])
+            if not mixed_training:
+                train_baseline_generated_berts(processed_dataset_output, results_output, model_output, datasets[i])
+                
+                finetune_berts(processed_dataset_output, results_output, model_output, datasets[i])
+                
+                ood_analysis(datasets[i], processed_dataset_output, results_output)
             
-            for dataset in datasets:
-                finetune_berts(processed_dataset_output, results_output, model_output, dataset)
-            
-            ood_analysis(processed_dataset_output, results_output)
+            else:
+
+                combined_labelled = combine_with_generated(processed_dataset_output, f'{processed_dataset_output}/{datasets[i]}_filteredgenlabelled/filteredgeneratedbiobertlabelclean{datasets[i]}.conll', datasets[i])
+
+                with open(f'{processed_dataset_output}/{datasets[i]}_filteredgenlabelled/filteredgeneratedbiobertlabelclean{datasets[i]}.conll', "w") as f:
+                    tokens, labels = list(combined_labelled["token"]), list(combined_labelled["label"])
+
+                    for token, label in zip(tokens, labels):
+                        f.write(f'{token.replace(" ", "")} {label}\n')
+                
+                combined_unlabelled = combine_with_generated(processed_dataset_output, f'{processed_dataset_output}/{datasets[i]}_filteredgen/totalfilteredgen.conll', datasets[i])
+
+                with open(f'{processed_dataset_output}/{datasets[i]}_filteredgen/totalfilteredgen.conll', "w") as f:
+
+                    tokens, labels = list(combined_unlabelled["token"]), list(combined_unlabelled["label"])
+
+                    for token, label in zip(tokens, labels):
+                        f.write(f'{token.replace(" ", "")} {label}\n')
+
+                train_baseline_generated_berts(processed_dataset_output, results_output, model_output, datasets[i])
+
+                ood_analysis(datasets[i], processed_dataset_output, results_output)
+
 
 
 if __name__ == "__main__":
