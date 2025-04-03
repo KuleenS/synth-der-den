@@ -16,38 +16,31 @@ def ood_analysis(dataset: str, dataset_folder: str, results_folder: str):
     train_cuis.add("CUI-less")
 
     for conll_file in conll_files:
-        print(os.path.basename(conll_file), "results")
-        
         df = pd.read_csv(conll_file, sep='\s', engine='python', header=None, names = ['token', 'label','predicted', 'cui'], on_bad_lines='skip')
 
         df_ood = df[~df['cui'].isin(train_cuis)]
 
         pu,ru,fu,su = precision_recall_fscore_support(df_ood['label'], df_ood['predicted'], labels = ["DISEASE", "O"])
 
-        pm,rm,fm,sm = precision_recall_fscore_support(df_ood['label'], df_ood['predicted'], labels = ["DISEASE", "O"])
+        # pm,rm,fm,sm = precision_recall_fscore_support(df_ood['label'], df_ood['predicted'], labels = ["DISEASE", "O"])
 
         acc = accuracy_score(df_ood['label'], df_ood['predicted'])
 
         correct = accuracy_score(df_ood['label'], df_ood['predicted'], normalize = False)
 
-        print("OOD Analysis")
-        print("Micro Prec: {} | Micro Rec: {} | Micro F1: {} | Support: {}".format(pu, ru, fu, su))
-        print("Macro Prec: {} | Macro Rec: {} | Macro F1: {}".format(pm, rm, fm))
-        print("Accuracy: {}".format(acc))
-        print("Correct: {}".format(correct))
-        print("Total: {}".format(len(df_ood)))
+        print("OOD Analysis", os.path.basename(conll_file), "results", "{} {} {} {} {} {} {}".format(pu, ru, fu, su, acc, correct, len(df_ood)))
 
-        print("Overall Analysis")
-        pu,ru,fu,su = precision_recall_fscore_support(df['label'], df['predicted'], labels = ["DISEASE", "O"])
+        # print("Overall Analysis")
+        # pu,ru,fu,su = precision_recall_fscore_support(df['label'], df['predicted'], labels = ["DISEASE", "O"])
 
-        pm,rm,fm,sm = precision_recall_fscore_support(df['label'], df['predicted'], labels = ["DISEASE", "O"])
+        # pm,rm,fm,sm = precision_recall_fscore_support(df['label'], df['predicted'], labels = ["DISEASE", "O"])
 
-        acc = accuracy_score(df['label'], df['predicted'])
+        # acc = accuracy_score(df['label'], df['predicted'])
         
-        correct = accuracy_score(df['label'], df['predicted'], normalize = False)
+        # correct = accuracy_score(df['label'], df['predicted'], normalize = False)
 
-        print("Micro Prec: {} | Micro Rec: {} | Micro F1: {} | Support: {}".format(pu, ru, fu, su))
-        print("Macro Prec: {} | Macro Rec: {} | Macro F1: {}".format(pm, rm, fm))
-        print("Accuracy: {}".format(acc))
-        print("Correct: {}".format(correct))
-        print("Total: {}".format(len(df_ood)))
+        # print("Micro Prec: {} | Micro Rec: {} | Micro F1: {} | Support: {}".format(pu, ru, fu, su))
+        # print("Macro Prec: {} | Macro Rec: {} | Macro F1: {}".format(pm, rm, fm))
+        # print("Accuracy: {}".format(acc))
+        # print("Correct: {}".format(correct))
+        # print("Total: {}".format(len(df_ood)))
