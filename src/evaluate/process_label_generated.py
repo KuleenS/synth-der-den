@@ -18,7 +18,7 @@ def process_labeled_generated_conll(path: str):
 def combine_with_generated(output_data: str, generated_path: str, training_dataset: str):
     #helper function to combine the generated text with the semeval text
     dataset = pd.read_csv(os.path.join(output_data, f'{training_dataset}', f'train_{training_dataset}.conll'), sep='\s', header=None, names=['token','label'], engine='python')
-    generated = pd.read_csv(generated_path, sep='\s', header=None, names=["token", "label"])
+    generated = pd.read_csv(generated_path, sep='\s', header=None, names=["token", "label"], engine='python')
 
     stack = pd.concat([dataset, generated],ignore_index=True)
     return stack
@@ -41,14 +41,17 @@ def label_generated_conll(dataset_folder: str, training_dataset: str, model_outp
 
             args = Namespace(
                 file = input_file,
+                files = None,
                 model_checkpoint = os.path.join(model_output, "baselines", f'{training_dataset}', f'{models[j]}/'),
                 conll_output = output_file,
             )
             
             predict(args=args)
 
-
         data = process_labeled_generated_conll(os.path.join(dataset_folder, f"{training_dataset}_{datasets_mode}genlabelled", f"{datasets_mode}generated{models[j]}label{training_dataset}.conll"))
-        
-        data.to_csv(os.path.join(dataset_folder,f'{training_dataset}_{datasets_mode}genlabelled', f'{datasets_mode}generated{models[j]}labelclean{training_dataset}.conll'), index=False, sep=" ", header=False)
 
+        tokens, labels = list(data["token"]), list(data["label"])
+
+        with open(os.path.join(dataset_folder,f'{training_dataset}_{datasets_mode}genlabelled', f'{datasets_mode}generated{models[j]}labelclean{training_dataset}.conll'), 'w') as f:
+            for token, label in zip(tokens, labels):
+                f.write(f'{token.replace(" ", "")} {label}\n')

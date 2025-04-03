@@ -141,17 +141,18 @@ def generated_to_conll(generated_output: str, output_path: str, filtered: bool, 
         filtered_path = os.path.join(output_path, f"{dataset}_filteredgen")
 
         if not os.path.exists(filtered_path):
-            os.mkdir(filtered_path)
+            os.makedirs(filtered_path, exist_ok=True)
         with open(os.path.join(filtered_path, 'totalfilteredgen.conll'), 'w') as f:
             for i in range(len(tokens)):
-                f.write(f'{tokens[i]} {labels[i]}\n')
+                f.write(f'{tokens[i].replace(" ", "")} {labels[i]}\n')
 
     else:
         
         complete_path = os.path.join(output_path,f"{dataset}_completegen")
 
         if not os.path.exists(complete_path):
-            os.mkdir(complete_path)
+            os.makedirs(complete_path, exist_ok=True)
+        
         with open(os.path.join(filtered_path, 'totalcompletegen.conll'), 'w') as f:
             for i in range(len(tokens)):
-                f.write(f'{tokens[i]} {labels[i]}\n')
+                f.write(f'{tokens[i].replace(" ", "")} {labels[i]}\n')
