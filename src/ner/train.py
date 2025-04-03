@@ -159,15 +159,15 @@ def main(args):
 
         results = metric.compute()
 
-        print(
-            f"epoch {epoch+1}:",
-            {
-                key: results[f"overall_{key}"]
-                for key in ["precision", "recall", "f1", "accuracy"]
-            },
-        )
+        # print(
+        #     f"epoch {epoch+1}:",
+        #     {
+        #         key: results[f"overall_{key}"]
+        #         for key in ["precision", "recall", "f1", "accuracy"]
+        #     },
+        # )
 
-        print(f"Eval Loss: {average_loss}")
+        # print(f"Eval Loss: {average_loss}")
 
         if average_loss < current_eval_loss:
             current_eval_loss = average_loss
