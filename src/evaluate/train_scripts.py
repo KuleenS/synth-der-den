@@ -19,6 +19,9 @@ def train_baseline_berts(dataset_folder: str, results_folder: str, training_data
 
         output_file = os.path.join(results_folder, f"{models_output[i]}_baseline_trained_on_{training_dataset}_testedwith_{training_dataset}.conll")
 
+        os.makedirs(results_folder, exist_ok=True)
+        os.makedirs(save_directories[i], exist_ok=True)
+
         args = Namespace(
             files = input_files,
             model_checkpoint = models_to_train[i],
@@ -60,6 +63,9 @@ def train_baseline_generated_berts(dataset_folder: str, results_folder: str, mod
             
             output_file = os.path.join(results_folder, f"{models_output[j]}_trained_on_{dataset_path}_tested_on_{test_set}.conll")
 
+            os.makedirs(results_folder, exist_ok=True)
+            os.makedirs(save_directories[i], exist_ok=True)
+
             args = Namespace(
                 files = input_files,
                 model_checkpoint = models_to_train[j],
@@ -88,6 +94,9 @@ def finetune_berts(dataset_folder: str, results_folder: str, model_output: str, 
         output_file = os.path.join(results_folder, f"{input_model_names[i]}_model_then_trained_on_{training_set}_tested_on_{training_set}.conll")
 
         print(f"Training baselines generated {training_set} testing on {training_set} with {input_models[i]}")
+
+        os.makedirs(results_folder, exist_ok=True)
+        os.makedirs(output_models[i], exist_ok=True)
 
         args = Namespace(
                 files = input_files,
