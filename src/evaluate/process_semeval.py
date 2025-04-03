@@ -87,7 +87,7 @@ def semeval_to_conll(semeval_path: str, output_path: str) -> None:
     nlp = spacy.load("en_core_sci_md")
 
     if not os.path.exists(os.path.join(output_path,'semeval')):
-        os.mkdir(os.path.join(output_path,'semeval'))
+        os.makedirs(os.path.join(output_path,'semeval'), exist_ok=True)
 
     train_tokens, train_labels, train_cuis = process_semeval(train_filenames, train_path, nlp)
     dev_tokens, dev_labels, dev_cuis = process_semeval(dev_filenames, dev_path, nlp)
@@ -96,20 +96,42 @@ def semeval_to_conll(semeval_path: str, output_path: str) -> None:
     #writes them out
     with open(os.path.join(output_path, 'semeval', 'train_semeval_cui.conll'), 'w') as f:
         for token, label, cui in zip(train_tokens, train_labels, train_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label} {cui}\n')
+        
     with open(os.path.join(output_path, 'semeval', 'dev_semeval_cui.conll'), 'w') as f:
         for token, label, cui in zip(dev_tokens, dev_labels, dev_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label} {cui}\n')
+            
     with open(os.path.join(output_path, 'semeval', 'test_semeval_cui.conll'), 'w') as f:
         for token, label, cui in zip(test_tokens, test_labels, test_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label} {cui}\n')
     
     with open(os.path.join(output_path, 'semeval', 'train_semeval.conll'), 'w') as f:
         for token, label, cui in zip(train_tokens, train_labels, train_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label}\n')
+
     with open(os.path.join(output_path, 'semeval', 'dev_semeval.conll'), 'w') as f:
         for token, label, cui in zip(dev_tokens, dev_labels, dev_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label}\n')
+
     with open(os.path.join(output_path, 'semeval', 'test_semeval.conll'), 'w') as f:
         for token, label, cui in zip(test_tokens, test_labels, test_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label}\n')

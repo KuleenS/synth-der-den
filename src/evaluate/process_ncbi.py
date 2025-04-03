@@ -79,27 +79,49 @@ def ncbi_to_conll(output_path: str, omim_to_cui: Dict[str, str], mesh_to_cui: Di
     test_tokens, test_labels, test_cuis = process_ncbi(dataset, "test", nlp, omim_to_cui, mesh_to_cui)
 
     if not os.path.exists(os.path.join(output_path,'ncbi')):
-        os.mkdir(os.path.join(output_path,'ncbi'))
+        os.makedirs(os.path.join(output_path,'ncbi'), exist_ok=True)
 
     #writes them out
     with open(os.path.join(output_path, 'ncbi', 'train_ncbi_cui.conll'), 'w') as f:
         for token, label, cui in zip(train_tokens, train_labels, train_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label} {cui}\n')
+
     with open(os.path.join(output_path, 'ncbi', 'dev_ncbi_cui.conll'), 'w') as f:
         for token, label, cui in zip(dev_tokens, dev_labels, dev_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label} {cui}\n')
+
     with open(os.path.join(output_path, 'ncbi', 'test_ncbi_cui.conll'), 'w') as f:
         for token, label, cui in zip(test_tokens, test_labels, test_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label} {cui}\n')
     
     with open(os.path.join(output_path, 'ncbi', 'train_ncbi.conll'), 'w') as f:
         for token, label, cui in zip(train_tokens, train_labels, train_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label}\n')
+            
     with open(os.path.join(output_path, 'ncbi', 'dev_ncbi.conll'), 'w') as f:
         for token, label, cui in zip(dev_tokens, dev_labels, dev_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label}\n')
+    
     with open(os.path.join(output_path, 'ncbi', 'test_ncbi.conll'), 'w') as f:
         for token, label, cui in zip(test_tokens, test_labels, test_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label}\n')
 
 

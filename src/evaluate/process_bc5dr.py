@@ -93,27 +93,49 @@ def bc5dr_to_conll(output_path: str, omim_to_cui: Dict[str, str], mesh_to_cui: D
     test_tokens, test_labels, test_cuis = process_bc5dr(dataset, "test", nlp, omim_to_cui, mesh_to_cui)
 
     if not os.path.exists(os.path.join(output_path,'bc5dr')):
-        os.mkdir(os.path.join(output_path,'bc5dr'))
+        os.makedirs(os.path.join(output_path,'bc5dr'), exist_ok=True)
 
     #writes them out
     with open(os.path.join(output_path, 'bc5dr', 'train_bc5dr_cui.conll'), 'w') as f:
         for token, label, cui in zip(train_tokens, train_labels, train_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label} {cui}\n')
+    
     with open(os.path.join(output_path, 'bc5dr', 'dev_bc5dr_cui.conll'), 'w') as f:
         for token, label, cui in zip(dev_tokens, dev_labels, dev_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label} {cui}\n')
+    
     with open(os.path.join(output_path, 'bc5dr', 'test_bc5dr_cui.conll'), 'w') as f:
         for token, label, cui in zip(test_tokens, test_labels, test_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label} {cui}\n')
     
     with open(os.path.join(output_path, 'bc5dr', 'train_bc5dr.conll'), 'w') as f:
         for token, label, cui in zip(train_tokens, train_labels, train_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label}\n')
+    
     with open(os.path.join(output_path, 'bc5dr', 'dev_bc5dr.conll'), 'w') as f:
         for token, label, cui in zip(dev_tokens, dev_labels, dev_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label}\n')
+    
     with open(os.path.join(output_path, 'bc5dr', 'test_bc5dr.conll'), 'w') as f:
         for token, label, cui in zip(test_tokens, test_labels, test_cuis):
+
+            token = token.replace(" ", "")
+
             f.write(f'{token} {label}\n')
 
 
