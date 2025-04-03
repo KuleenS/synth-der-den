@@ -126,7 +126,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", default="microsoft/BiomedNLP-KRISSBERT-PubMed-UMLS-EL")
     parser.add_argument("--output")
-    parser.add_argument("--semeval_input", default = None)
+    parser.add_argument("--semeval_input", default = "data/semeval_split/train")
     parser.add_argument("--dataset")
     parser.add_argument("--generated_input")
     parser.add_argument("--mode", type=int)

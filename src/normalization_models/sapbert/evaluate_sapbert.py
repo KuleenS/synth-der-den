@@ -255,11 +255,11 @@ def main(args):
     print("NCBI", run_evaluation(train_ncbi_tuples, test_ncbi_tuples, tokenizer, model))
     print("Semeval", run_evaluation(train_semeval_tuples, test_semeval_tuples, tokenizer, model))
 
-    generated_input = args.synthetic_data
+    generated_inputs = args.synthetic_data
 
     datasets = [("BC5DR", train_bc5dr_tuples, test_bc5dr_tuples), ("NCBI", train_ncbi_tuples, test_ncbi_tuples), ("Semeval", train_semeval_tuples, test_semeval_tuples)]
 
-    for dataset_name, train, test in datasets:
+    for (dataset_name, train, test), generated_input  in zip(datasets, generated_inputs):
 
         mode_1_synthetic = synthetic_data_generator.generate_data(generated_input, train, test, 1)
         mode_2_synthetic = synthetic_data_generator.generate_data(generated_input, train, test, 2)
@@ -276,7 +276,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("semeval_data_path")
-    parser.add_argument("synthetic_data")
+    parser.add_argument("synthetic_data", nargs="+")
 
     args = parser.parse_args()
 
