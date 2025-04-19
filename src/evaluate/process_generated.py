@@ -91,7 +91,7 @@ def process_chunk(chunk, nlp, filtered):
 
 def preprocess_parallel(texts, nlp, filtered, chunksize=100):
     #wrapper function that uses joblib to process all the generated lines
-    executor = Parallel(n_jobs=7, verbose=1, max_nbytes=None)
+    executor = Parallel(n_jobs=-1, verbose=1, max_nbytes=None)
     tasks = (delayed(process_chunk)(chunk, nlp, filtered) for chunk in chunker(texts, len(texts), chunksize=chunksize))
     result = executor(tasks)
     total_tokens = [] 
