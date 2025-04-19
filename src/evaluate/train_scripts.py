@@ -1,14 +1,18 @@
 import os
 
+from typing import List
+
 from src.ner.train import main as train
 
 from argparse import Namespace
 
-def train_baseline_berts(dataset_folder: str, results_folder: str, training_dataset: str, model_output: str) -> None:
+def train_baseline_berts(dataset_folder: str, results_folder: str, training_dataset: str, model_output: str) -> List[float]:
     #runs the baseline berts and outputs their results
     models_to_train = ['dmis-lab/biobert-base-cased-v1.1']
     models_output = ['biobert']
     save_directories = [os.path.join(model_output, x) for x in [f'baselines/{training_dataset}/biobert/']]
+
+    model_outputs = []
 
     for i in range(len(models_to_train)):
         print(f"Training baselines {training_dataset} testing on {training_dataset} with {models_to_train[i]}")
@@ -29,14 +33,26 @@ def train_baseline_berts(dataset_folder: str, results_folder: str, training_data
             conll_output = output_file,
         )
 
-        train(args = args)
+        model_output = train(args = args)
+
+        model_outputs.append([output_file]+model_output)
+    
+    return model_outputs
 
 
-def train_baseline_generated_berts(dataset_folder: str, results_folder: str, model_output: str, test_set: str) -> None:
-    datasets = [
-        f'{test_set}_filteredgenlabelled/filteredgeneratedbiobertlabelclean{test_set}.conll', 
-        f'{test_set}_filteredgen/totalfilteredgen.conll',
-    ]
+def train_baseline_generated_berts(dataset_folder: str, results_folder: str, model_output: str, test_set: str, combine: bool) -> List[float]:
+
+    if combine:
+        datasets = [
+            f'{test_set}_filteredgenlabelled/filteredgeneratedbiobertlabel{test_set}_combine.conll', 
+            f'{test_set}_filteredgen/totalfilteredgen_combine.conll',
+        ]
+    else:
+        datasets = [
+            f'{test_set}_filteredgenlabelled/filteredgeneratedbiobertlabel{test_set}.conll', 
+            f'{test_set}_filteredgen/totalfilteredgen.conll',
+        ]
+
 
     datasets = [os.path.join(dataset_folder, x) for x in datasets]
 
@@ -47,6 +63,7 @@ def train_baseline_generated_berts(dataset_folder: str, results_folder: str, mod
 
     save_directories = [os.path.join(model_output, x) for x in save_directories]
 
+    model_outputs = []
 
     for i in range(len(datasets)):
         for j in range(len(models_to_train)):
@@ -73,9 +90,13 @@ def train_baseline_generated_berts(dataset_folder: str, results_folder: str, mod
                 conll_output = output_file,
             )
 
-            train(args = args)
+            model_output = train(args = args)
+
+            model_outputs.append([output_file] + model_output)
     
-def finetune_berts(dataset_folder: str, results_folder: str, model_output: str, training_set: str) -> None:
+    return model_outputs
+    
+def finetune_berts(dataset_folder: str, results_folder: str, model_output: str, training_set: str) -> List[float]:
     input_models = [f"baselines/generated_{training_set}_labelled/biobert/", f"baselines/{training_set}_generated/biobert/"]
 
     output_models = [os.path.join(model_output, "combined", x.split("/")[1]+ f"_{training_set}") for x in input_models]
@@ -88,6 +109,8 @@ def finetune_berts(dataset_folder: str, results_folder: str, model_output: str, 
                     os.path.join(dataset_folder, f"{training_set}" , f"train_{training_set}.conll"), 
                     os.path.join(dataset_folder, f"{training_set}", f"dev_{training_set}.conll"),
                     os.path.join(dataset_folder, f"{training_set}", f"test_{training_set}_cui.conll")]
+
+    model_outputs = []
 
     for i in range(len(input_models)):
 
@@ -105,4 +128,9 @@ def finetune_berts(dataset_folder: str, results_folder: str, model_output: str, 
                 conll_output = output_file,
         )
 
-        train(args = args)
+        model_output = train(args = args)
+
+        model_outputs.append([output_file] + model_output)
+    
+    return model_outputs
+
