@@ -277,13 +277,7 @@ def main(args):
 
         writer.writerows(zip(total_tokens, total_labels, total_predictions, total_cuis))
 
-    print(
-            f"test:",
-            {
-                key: results[f"overall_{key}"]
-                for key in ["precision", "recall", "f1", "accuracy"]
-            },
-    )
+    return [results[f"overall_{key}"] for key in ["precision", "recall", "f1", "accuracy"]]
 
     
 if __name__ == "__main__":
