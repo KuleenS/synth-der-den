@@ -1,5 +1,7 @@
 import argparse
 
+import csv
+
 import os
 
 import random
@@ -85,18 +87,29 @@ def main(args):
 
     mesh_to_cui = dict(zip(list(df_msh["MSH_CODE"]), list(df_msh["CUI"])))
 
-    semeval_to_conll(semeval_path, processed_dataset_output)
-    ncbi_to_conll(processed_dataset_output, omim_to_cui, mesh_to_cui)
-    bc5dr_to_conll(processed_dataset_output, omim_to_cui, mesh_to_cui)
+    os.makedirs(os.path.join(processed_dataset_output), exist_ok=True)
+
+    if not os.path.exists(os.path.join(processed_dataset_output, 'semeval', 'train_semeval_cui.conll')):
+        semeval_to_conll(semeval_path, processed_dataset_output)
+    
+    if not os.path.exists(os.path.join(processed_dataset_output, 'ncbi', 'train_ncbi_cui.conll')):
+        ncbi_to_conll(processed_dataset_output, omim_to_cui, mesh_to_cui)
+
+    if not os.path.exists(os.path.join(processed_dataset_output, 'bc5dr', 'train_bc5dr_cui.conll')):
+        bc5dr_to_conll(processed_dataset_output, omim_to_cui, mesh_to_cui)
 
     # turns generated notes to conll with different filtering and modes
     for generated_note_path, dataset in zip(generated_note_paths, datasets):
-        generated_to_conll(generated_note_path, processed_dataset_output, True, mode, dataset)
+        if not os.path.exists(os.path.join(processed_dataset_output, f"{dataset}_filteredgen", 'totalfilteredgen.conll')):
+            generated_to_conll(generated_note_path, processed_dataset_output, True, mode, dataset)
     
     for i in range(len(datasets)):
-        for seed in range(5):
 
-            random_seed = random.randint(0, 100_000)
+        num_previous_completed_runs = len([x for x in os.listdir(results_output) if datasets[i] in x and "_ood.csv" in x])
+
+        for seed in range(num_previous_completed_runs, 5):
+
+            random_seed = random.randint(0, 2**32 - 2)
 
             set_seed(random_seed)
 
@@ -104,41 +117,55 @@ def main(args):
 
             # run the baseline models
             print(f"training baseline {datasets[i]}")
-            train_baseline_berts(processed_dataset_output, results_output, datasets[i], model_output)
+            baseline_model_performance = train_baseline_berts(processed_dataset_output, results_output, datasets[i], model_output)
 
             print(f"labelling baseline with {datasets[i]} baseline model")
             label_generated_conll(processed_dataset_output, datasets[i], model_output)
 
             if not mixed_training:
-                train_baseline_generated_berts(processed_dataset_output, results_output, model_output, datasets[i])
+                generated_model_performance = train_baseline_generated_berts(processed_dataset_output, results_output, model_output, datasets[i], False)
                 
-                finetune_berts(processed_dataset_output, results_output, model_output, datasets[i])
+                finetuned_model_performance = finetune_berts(processed_dataset_output, results_output, model_output, datasets[i])
+
+                performance = baseline_model_performance+generated_model_performance+finetuned_model_performance
                 
-                ood_analysis(datasets[i], processed_dataset_output, results_output)
+                with open(os.path.join(results_output, f"{dataset}_mode_{mode}_run_number_{seed}.csv"), "w") as f:
+                    csv_out = csv.writer(f)
+
+                    csv_out.writerow(["filename", "precision", "recall", "f1", "accuracy"])
+
+                    for item in performance: 
+                        csv_out.writerow(item)
+                
+                ood_analysis(datasets[i], processed_dataset_output, results_output, seed, mode)
             
             else:
 
-                combined_labelled = combine_with_generated(processed_dataset_output, f'{processed_dataset_output}/{datasets[i]}_filteredgenlabelled/filteredgeneratedbiobertlabelclean{datasets[i]}.conll', datasets[i])
+                tokens, labels = combine_with_generated(processed_dataset_output, f'{processed_dataset_output}/{datasets[i]}_filteredgenlabelled/filteredgeneratedbiobertlabel{datasets[i]}.conll', datasets[i])
 
-                with open(f'{processed_dataset_output}/{datasets[i]}_filteredgenlabelled/filteredgeneratedbiobertlabelclean{datasets[i]}.conll', "w") as f:
-                    tokens, labels = list(combined_labelled["token"]), list(combined_labelled["label"])
-
+                with open(f'{processed_dataset_output}/{datasets[i]}_filteredgenlabelled/filteredgeneratedbiobertlabel{datasets[i]}_combine.conll', "w") as f:
                     for token, label in zip(tokens, labels):
                         f.write(f'{token.replace(" ", "")} {label}\n')
                 
-                combined_unlabelled = combine_with_generated(processed_dataset_output, f'{processed_dataset_output}/{datasets[i]}_filteredgen/totalfilteredgen.conll', datasets[i])
+                tokens, labels = combine_with_generated(processed_dataset_output, f'{processed_dataset_output}/{datasets[i]}_filteredgen/totalfilteredgen.conll', datasets[i])
 
-                with open(f'{processed_dataset_output}/{datasets[i]}_filteredgen/totalfilteredgen.conll', "w") as f:
-
-                    tokens, labels = list(combined_unlabelled["token"]), list(combined_unlabelled["label"])
-
+                with open(f'{processed_dataset_output}/{datasets[i]}_filteredgen/totalfilteredgen_combine.conll', "w") as f:
                     for token, label in zip(tokens, labels):
                         f.write(f'{token.replace(" ", "")} {label}\n')
 
-                train_baseline_generated_berts(processed_dataset_output, results_output, model_output, datasets[i])
+                generated_model_performance = train_baseline_generated_berts(processed_dataset_output, results_output, model_output, datasets[i], True)
 
-                ood_analysis(datasets[i], processed_dataset_output, results_output)
+                performance = baseline_model_performance+generated_model_performance
 
+                with open(os.path.join(results_output, f"{dataset}_mode_{mode}_run_number_{seed}.csv"), "w") as f:
+                    csv_out = csv.writer(f)
+
+                    csv_out.writerow(["filename", "precision", "recall", "f1", "accuracy"])
+
+                    for item in performance: 
+                        csv_out.writerow(item)
+
+                ood_analysis(datasets[i], processed_dataset_output, results_output, seed, mode)
 
 
 if __name__ == "__main__":
