@@ -35,7 +35,7 @@ def main(args):
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
     model = AutoModelForTokenClassification.from_pretrained(model_checkpoint)
 
-    tokenizer.model_max_length = 510
+    tokenizer.model_max_length = 8190 if "Modern" in tokenizer.name_or_path else 510 
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

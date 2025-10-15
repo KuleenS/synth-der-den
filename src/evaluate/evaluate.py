@@ -4,11 +4,13 @@ import csv
 
 import os
 
+import pathlib
+
 import random
 
 import tomli
 
-import pandas as pd
+import polars as pl
 
 import numpy as np
 
@@ -62,23 +64,13 @@ def main(args):
 
     mixed_training = evaluate_config["mixed_training"]
 
-    user = os.environ["UMLS_USER"]
-    pwd = os.environ["UMLS_PWD"]
-    database = os.environ["UMLS_DATABASE_NAME"]
-    ip = os.environ["UMLS_IP"]
+    mrconso =  pathlib.Path("/home/ksasse/umls/2024AB/META") / "MRCONSO.RRF"
 
-    mariadb_connection = mariadb.connect(
-        user=user, password=pwd, database=database, host=ip
-    )
+    MRCONSO = pl.read_csv(mrconso, separator="|", has_header=False, encoding="utf8", quote_char=None)
+    MRCONSO.columns = ["CUI", "LAT", "TS", "LUI", "STT", "SUI", "ISPREF", "AUI", "SAUI", "SCUI", "SDUI", "SAB", "TTY", "CODE", "STR", "SRL", "SUPPRESS", "CVF", "BLANK"]
 
-    df_omim = pd.read_sql(
-        "SELECT CUI, SAB, CODE, STR FROM MRCONSO WHERE SAB LIKE '%OMIM%'",
-        con=mariadb_connection,
-    )
-    df_msh = pd.read_sql(
-        "SELECT CUI, SAB, CODE, STR FROM MRCONSO WHERE SAB LIKE '%MSH%'",
-        con=mariadb_connection,
-    )
+    df_omim = MRCONSO[["CUI", "SAB", "CODE", "STR"]].filter(pl.col("SAB").str.contains("OMIM"))
+    df_msh = MRCONSO[["CUI", "SAB", "CODE", "STR"]].filter(pl.col("SAB").str.contains("MSH"))
 
     df_omim.columns = ["CUI", "OMIM_SAB", "OMIM_CODE", "OMIM_STR"]
     df_msh.columns = ["CUI", "MSH_SAB", "MSH_CODE", "MSH_STR"]
@@ -102,11 +94,20 @@ def main(args):
     for generated_note_path, dataset in zip(generated_note_paths, datasets):
         if not os.path.exists(os.path.join(processed_dataset_output, f"{dataset}_filteredgen", 'totalfilteredgen.conll')):
             generated_to_conll(generated_note_path, processed_dataset_output, True, mode, dataset)
+
+
+    models_output = ['BioClinical-ModernBERT-base', 'bert-base-uncased', 'ModernBERT-base']
+    models_to_train = ['thomas-sounack/BioClinical-ModernBERT-base', 'google-bert/bert-base-uncased', 'answerdotai/ModernBERT-base']
     
-    for i in range(len(datasets)):
+    for dataset in datasets:
 
-        num_previous_completed_runs = len([x for x in os.listdir(results_output) if datasets[i] in x and "_ood.csv" in x])
+        if os.path.exists(results_output):
 
+            num_previous_completed_runs = len([x for x in os.listdir(results_output) if dataset in x and "_ood.csv" in x])
+        
+        else:
+            num_previous_completed_runs = 0
+        
         for seed in range(num_previous_completed_runs, 5):
 
             random_seed = random.randint(0, 2**32 - 2)
@@ -116,16 +117,16 @@ def main(args):
             print(f"Run {seed} {random_seed}")
 
             # run the baseline models
-            print(f"training baseline {datasets[i]}")
-            baseline_model_performance = train_baseline_berts(processed_dataset_output, results_output, datasets[i], model_output)
+            print(f"training baseline {dataset}")
+            baseline_model_performance = train_baseline_berts(processed_dataset_output, results_output, dataset, model_output, models_to_train, models_output)
 
-            print(f"labelling baseline with {datasets[i]} baseline model")
-            label_generated_conll(processed_dataset_output, datasets[i], model_output)
+            print(f"labelling baseline with {dataset} baseline model")
+            label_generated_conll(processed_dataset_output, dataset, model_output, models_output)
 
             if not mixed_training:
-                generated_model_performance = train_baseline_generated_berts(processed_dataset_output, results_output, model_output, datasets[i], False)
+                generated_model_performance = train_baseline_generated_berts(processed_dataset_output, results_output, model_output, dataset, False, models_to_train, models_output)
                 
-                finetuned_model_performance = finetune_berts(processed_dataset_output, results_output, model_output, datasets[i])
+                finetuned_model_performance = finetune_berts(processed_dataset_output, results_output, model_output, dataset, models_output)
 
                 performance = baseline_model_performance+generated_model_performance+finetuned_model_performance
                 
@@ -137,23 +138,32 @@ def main(args):
                     for item in performance: 
                         csv_out.writerow(item)
                 
-                ood_analysis(datasets[i], processed_dataset_output, results_output, seed, mode)
+                ood_analysis(dataset, processed_dataset_output, results_output, seed, mode)
             
             else:
 
-                tokens, labels = combine_with_generated(processed_dataset_output, f'{processed_dataset_output}/{datasets[i]}_filteredgenlabelled/filteredgeneratedbiobertlabel{datasets[i]}.conll', datasets[i])
+                tokens, labels = combine_with_generated(processed_dataset_output, f'{processed_dataset_output}/{dataset}_filteredgenlabelled/filteredgeneratedbiobertlabel{dataset}.conll', dataset)
 
-                with open(f'{processed_dataset_output}/{datasets[i]}_filteredgenlabelled/filteredgeneratedbiobertlabel{datasets[i]}_combine.conll', "w") as f:
+                with open(f'{processed_dataset_output}/{dataset}_filteredgenlabelled/filteredgeneratedbiobertlabel{dataset}_combine.conll', "w") as f:
                     for token, label in zip(tokens, labels):
-                        f.write(f'{token.replace(" ", "")} {label}\n')
+                        output_string = f'{token.replace(" ", "")} {label}'
+
+                        output_string = output_string.replace("\n", "").strip()
+
+                        f.write(f'{output_string}\n')
                 
-                tokens, labels = combine_with_generated(processed_dataset_output, f'{processed_dataset_output}/{datasets[i]}_filteredgen/totalfilteredgen.conll', datasets[i])
+                tokens, labels = combine_with_generated(processed_dataset_output, f'{processed_dataset_output}/{dataset}_filteredgen/totalfilteredgen.conll', dataset)
 
-                with open(f'{processed_dataset_output}/{datasets[i]}_filteredgen/totalfilteredgen_combine.conll', "w") as f:
+                with open(f'{processed_dataset_output}/{dataset}_filteredgen/totalfilteredgen_combine.conll', "w") as f:
                     for token, label in zip(tokens, labels):
-                        f.write(f'{token.replace(" ", "")} {label}\n')
 
-                generated_model_performance = train_baseline_generated_berts(processed_dataset_output, results_output, model_output, datasets[i], True)
+                        output_string = f'{token.replace(" ", "")} {label}'
+
+                        output_string = output_string.replace("\n", "").strip()
+
+                        f.write(f'{output_string}\n')
+
+                generated_model_performance = train_baseline_generated_berts(processed_dataset_output, results_output, model_output, dataset, True, models_to_train, models_output)
 
                 performance = baseline_model_performance+generated_model_performance
 
@@ -165,7 +175,7 @@ def main(args):
                     for item in performance: 
                         csv_out.writerow(item)
 
-                ood_analysis(datasets[i], processed_dataset_output, results_output, seed, mode)
+                ood_analysis(dataset, processed_dataset_output, results_output, seed, mode)
 
 
 if __name__ == "__main__":

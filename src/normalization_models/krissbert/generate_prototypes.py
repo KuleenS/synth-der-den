@@ -4,9 +4,7 @@ import os
 import pathlib
 import pickle
 
-import mysql.connector as mariadb
-
-import pandas as pd
+import polars as pl
 
 from transformers import AutoConfig, AutoTokenizer, AutoModel
 
@@ -43,23 +41,14 @@ def main(args):
 
     ds = None
 
-    user = os.environ["UMLS_USER"]
-    pwd = os.environ["UMLS_PWD"]
-    database = os.environ["UMLS_DATABASE_NAME"]
-    ip = os.environ["UMLS_IP"]
+    mrconso =  pathlib.Path("/home/ksasse/umls/2024AB/META") / "MRCONSO.RRF"
 
-    mariadb_connection = mariadb.connect(
-        user=user, password=pwd, database=database, host=ip
-    )
+    MRCONSO = pl.read_csv(mrconso, separator="|", has_header=False, encoding="utf8", quote_char=None)
+    MRCONSO.columns = ["CUI", "LAT", "TS", "LUI", "STT", "SUI", "ISPREF", "AUI", "SAUI", "SCUI", "SDUI", "SAB", "TTY", "CODE", "STR", "SRL", "SUPPRESS", "CVF", "BLANK"]
 
-    df_omim = pd.read_sql(
-        "SELECT CUI, SAB, CODE, STR FROM MRCONSO WHERE SAB LIKE '%OMIM%'",
-        con=mariadb_connection,
-    )
-    df_msh = pd.read_sql(
-        "SELECT CUI, SAB, CODE, STR FROM MRCONSO WHERE SAB LIKE '%MSH%'",
-        con=mariadb_connection,
-    )
+
+    df_omim = MRCONSO[["CUI", "SAB", "CODE", "STR"]].filter(pl.col("SAB").str.contains("OMIM"))
+    df_msh = MRCONSO[["CUI", "SAB", "CODE", "STR"]].filter(pl.col("SAB").str.contains("MSH"))
 
     df_omim.columns = ["CUI", "OMIM_SAB", "OMIM_CODE", "OMIM_STR"]
     df_msh.columns = ["CUI", "MSH_SAB", "MSH_CODE", "MSH_STR"]
@@ -67,7 +56,6 @@ def main(args):
     omim_to_cui = dict(zip(list(df_omim["OMIM_CODE"]), list(df_omim["CUI"])))
 
     mesh_to_cui = dict(zip(list(df_msh["MSH_CODE"]), list(df_msh["CUI"])))
-
 
     if dataset == "semeval":
 

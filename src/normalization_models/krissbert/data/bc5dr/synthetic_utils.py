@@ -81,9 +81,9 @@ def synthetic_process(input_file: str, dataset, mode: int, omim_to_cui: Dict[str
         
         d = Document()
 
-        output = output.replace('</s>', ' ').replace('<unk>', ' ').replace("<1CUI>", " <1CUI> ").replace("</1CUI>", " </1CUI> ")
+        output = output.replace('</s>', ' ').replace('<unk>', ' ').replace("<ENTITY>", " <ENTITY> ").replace("</ENTITY>", " </ENTITY> ").replace("<1CUI>", "").replace("</1CUI>", "")
 
-        re_matches = re.finditer(r'(?<=<1CUI>).*?(?=<\/1CUI>)', output)
+        re_matches = re.finditer(r'(?<=<ENTITY>).*?(?=<\/ENTITY>)', output)
 
         for re_match in re_matches:
             m = Mention(cui=cui, start=re_match.start(), end=re_match.end(), text=output)

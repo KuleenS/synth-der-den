@@ -27,9 +27,13 @@ def label_line(text: str, filtered: bool) -> Optional[List[Tuple[int, int, str, 
 
     #removing useless tokens with spaces, take alot of space
     #finding the delimeters for the disease
-    re_matches = re.finditer(r'(?<=<1CUI>).*?(?=<\/1CUI>)', text)
+    cui_re_matches = re.finditer(r'(?<=<1CUI>).*?(?=<\/1CUI>)', text)
+    entity_re_matches = re.finditer(r'(?<=<ENTITY>).*?(?=<\/ENTITY>)', text)
     #creating the NERTags
-    for match in re_matches:
+    for match in cui_re_matches:
+        nerTags.append((match.start(), match.end(), match.group(0), 'DISEASE'))
+    
+    for match in entity_re_matches:
         nerTags.append((match.start(), match.end(), match.group(0), 'DISEASE'))
 
     #if its filtered then if the line doesnt have 1CUI tags it will not be added to the final output
@@ -41,7 +45,7 @@ def label_line(text: str, filtered: bool) -> Optional[List[Tuple[int, int, str, 
 
 def process_line(text: str, nlp, filtered: bool) -> Tuple[List[str], List[str]]:
     #processes one line of generated text
-    text = text.replace('</s>', ' ').replace('<unk>', ' ').replace("<1CUI>", " <1CUI> ").replace("</1CUI>", " </1CUI> ")
+    text = text.replace('</s>', ' ').replace('<unk>', ' ').replace("<1CUI>", " <1CUI> ").replace("</1CUI>", " </1CUI> ").replace("<ENTITY>", " <ENTITY> ").replace("</ENTITY>", " </ENTITY> ")
     nerTags = label_line(text, filtered)
     tokens = []
     labels = []
@@ -65,7 +69,7 @@ def process_line(text: str, nlp, filtered: bool) -> Tuple[List[str], List[str]]:
     
     indexes = []
     for i in range(len(tokens)):
-        if '1CUI' in tokens[i] or (bool(re.search(r"\s{1,}", tokens[i])) and labels[i] != ' ') or "<" in tokens[i] or ">" in tokens[i]:
+        if '1CUI' in tokens[i] or (bool(re.search(r"\s{1,}", tokens[i])) and labels[i] != ' ') or "<" in tokens[i] or ">" in tokens[i] or 'ENTITY' in tokens[i]:
             indexes.append(i)
     
     for index in sorted(indexes, reverse=True):
@@ -143,9 +147,12 @@ def generated_to_conll(generated_output: str, output_path: str, filtered: bool, 
         if not os.path.exists(filtered_path):
             os.makedirs(filtered_path, exist_ok=True)
         with open(os.path.join(filtered_path, 'totalfilteredgen.conll'), 'w') as f:
-            for i in range(len(tokens)):
-                f.write(f'{tokens[i].replace(" ", "")} {labels[i]}\n')
+            for token, label in zip(tokens, labels):
+                output_string = f'{token.replace(" ", "")} {label}'
 
+                output_string = output_string.replace("\n", "").strip()
+
+                f.write(f'{output_string}\n')
     else:
         
         complete_path = os.path.join(output_path,f"{dataset}_completegen")
@@ -154,5 +161,9 @@ def generated_to_conll(generated_output: str, output_path: str, filtered: bool, 
             os.makedirs(complete_path, exist_ok=True)
         
         with open(os.path.join(filtered_path, 'totalcompletegen.conll'), 'w') as f:
-            for i in range(len(tokens)):
-                f.write(f'{tokens[i].replace(" ", "")} {labels[i]}\n')
+            for token, label in zip(tokens, labels):
+                output_string = f'{token.replace(" ", "")} {label}'
+
+                output_string = output_string.replace("\n", "").strip()
+
+                f.write(f'{output_string}\n')

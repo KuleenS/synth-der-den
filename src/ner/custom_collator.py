@@ -35,12 +35,16 @@ class DataCollatorForTokenClassificationCustom(DataCollatorMixin):
             The type of Tensor to return. Allowable values are "np", "pt" and "tf".
     """
 
-    tokenizer: PreTrainedTokenizerBase
-    padding = True
-    max_length = 510
-    pad_to_multiple_of = None
-    label_pad_token_id: int = -100
-    return_tensors: str = "pt"
+    def __init__(self, tokenizer: PreTrainedTokenizerBase, padding: bool = True, return_tensors: str = "pt", label_pad_token_id: int = -100, pad_to_multiple_of = None):
+
+        super().__init__()
+
+        self.tokenizer: PreTrainedTokenizerBase = tokenizer
+        self.padding = padding
+        self.max_length = self.tokenizer.model_max_length = 8190 if "Modern" in self.tokenizer.name_or_path else 510 
+        self.pad_to_multiple_of = pad_to_multiple_of
+        self.label_pad_token_id: int = label_pad_token_id
+        self.return_tensors: str = return_tensors
 
     def torch_call(self, features):
 

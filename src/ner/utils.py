@@ -6,12 +6,17 @@ class NERDataset(Dataset):
         self.test_sentences = test_sentences
         self.test_labels = test_labels
 
+        self.bert_length = 510
+        self.modern_bert_length = 8190
+
+        self.length = self.modern_bert_length if "Modern" in self.tokenizer.name_or_path else self.bert_length
+
     def __len__(self):
         return len(self.test_sentences)
 
     def __getitem__(self, idx):
         tokenized_inputs = self.tokenizer(
-            self.test_sentences[idx], truncation=True, is_split_into_words=True, max_length=510, padding=False
+            self.test_sentences[idx], truncation=True, is_split_into_words=True, max_length=self.length, padding=False
         )
 
         word_ids = tokenized_inputs.word_ids(0)
@@ -33,13 +38,18 @@ class NERDatasetCUI(Dataset):
         self.test_labels = test_labels
         self.test_cuis = test_cuis
 
+        self.bert_length = 510
+        self.modern_bert_length = 8190
+
+        self.length = self.modern_bert_length if "Modern" in self.tokenizer.name_or_path else self.bert_length
+
 
     def __len__(self):
         return len(self.test_sentences)
 
     def __getitem__(self, idx):
         tokenized_inputs = self.tokenizer(
-            self.test_sentences[idx], truncation=True, is_split_into_words=True, max_length=510, padding=False
+            self.test_sentences[idx], truncation=True, is_split_into_words=True, max_length=self.length, padding=False
         )
 
         word_ids = tokenized_inputs.word_ids(0)

@@ -99,45 +99,56 @@ def bc5dr_to_conll(output_path: str, omim_to_cui: Dict[str, str], mesh_to_cui: D
     with open(os.path.join(output_path, 'bc5dr', 'train_bc5dr_cui.conll'), 'w') as f:
         for token, label, cui in zip(train_tokens, train_labels, train_cuis):
 
-            token = token.replace(" ", "")
+            output_string = f'{token.replace(" ", "")} {label} {cui}'
 
-            f.write(f'{token} {label} {cui}\n')
+            output_string = output_string.replace("\n", "").strip()
+
+            f.write(f'{output_string}\n')
     
     with open(os.path.join(output_path, 'bc5dr', 'dev_bc5dr_cui.conll'), 'w') as f:
         for token, label, cui in zip(dev_tokens, dev_labels, dev_cuis):
 
-            token = token.replace(" ", "")
+            output_string = f'{token.replace(" ", "")} {label} {cui}'
 
-            f.write(f'{token} {label} {cui}\n')
+            output_string = output_string.replace("\n", "").strip()
+
+            f.write(f'{output_string}\n')
     
     with open(os.path.join(output_path, 'bc5dr', 'test_bc5dr_cui.conll'), 'w') as f:
         for token, label, cui in zip(test_tokens, test_labels, test_cuis):
 
-            token = token.replace(" ", "")
+            output_string = f'{token.replace(" ", "")} {label} {cui}'
 
-            f.write(f'{token} {label} {cui}\n')
+            output_string = output_string.replace("\n", "").strip()
+
+            f.write(f'{output_string}\n')
     
     with open(os.path.join(output_path, 'bc5dr', 'train_bc5dr.conll'), 'w') as f:
         for token, label, cui in zip(train_tokens, train_labels, train_cuis):
 
-            token = token.replace(" ", "")
+            output_string = f'{token.replace(" ", "")} {label}'
 
-            f.write(f'{token} {label}\n')
+            output_string = output_string.replace("\n", "").strip()
+
+            f.write(f'{output_string}\n')
     
     with open(os.path.join(output_path, 'bc5dr', 'dev_bc5dr.conll'), 'w') as f:
         for token, label, cui in zip(dev_tokens, dev_labels, dev_cuis):
 
-            token = token.replace(" ", "")
+            output_string = f'{token.replace(" ", "")} {label}'
 
-            f.write(f'{token} {label}\n')
+            output_string = output_string.replace("\n", "").strip()
+
+            f.write(f'{output_string}\n')
     
     with open(os.path.join(output_path, 'bc5dr', 'test_bc5dr.conll'), 'w') as f:
         for token, label, cui in zip(test_tokens, test_labels, test_cuis):
 
-            token = token.replace(" ", "")
+            output_string = f'{token.replace(" ", "")} {label}'
 
-            f.write(f'{token} {label}\n')
+            output_string = output_string.replace("\n", "").strip()
 
+            f.write(f'{output_string}\n')
 
 
 

@@ -13,13 +13,14 @@ import time
 import math
 import multiprocessing
 import tomli
+from pathlib import Path
 from typing import List, Tuple, Dict, Iterator, Set
 from functools import partial
 from multiprocessing.dummy import Pool
 
-import mysql.connector as mariadb
-
 import pandas as pd
+
+import polars as pl
 
 import numpy as np
 import torch
@@ -366,23 +367,23 @@ def main(args):
     
     vector_size = bert_config.hidden_size
 
-    user = os.environ["UMLS_USER"]
-    pwd = os.environ["UMLS_PWD"]
-    database = os.environ["UMLS_DATABASE_NAME"]
-    ip = os.environ["UMLS_IP"]
+    # user = os.environ["UMLS_USER"]
+    # pwd = os.environ["UMLS_PWD"]
+    # database = os.environ["UMLS_DATABASE_NAME"]
+    # ip = os.environ["UMLS_IP"]
 
-    mariadb_connection = mariadb.connect(
-        user=user, password=pwd, database=database, host=ip
-    )
+    # mariadb_connection = mariadb.connect(
+    #     user=user, password=pwd, database=database, host=ip
+    # )
 
-    df_omim = pd.read_sql(
-        "SELECT CUI, SAB, CODE, STR FROM MRCONSO WHERE SAB LIKE '%OMIM%'",
-        con=mariadb_connection,
-    )
-    df_msh = pd.read_sql(
-        "SELECT CUI, SAB, CODE, STR FROM MRCONSO WHERE SAB LIKE '%MSH%'",
-        con=mariadb_connection,
-    )
+    mrconso =  Path("/home/ksasse/umls/2024AB/META") / "MRCONSO.RRF"
+
+    MRCONSO = pl.read_csv(mrconso, separator="|", has_header=False, encoding="utf8", quote_char=None)
+    MRCONSO.columns = ["CUI", "LAT", "TS", "LUI", "STT", "SUI", "ISPREF", "AUI", "SAUI", "SCUI", "SDUI", "SAB", "TTY", "CODE", "STR", "SRL", "SUPPRESS", "CVF", "BLANK"]
+
+
+    df_omim = MRCONSO[["CUI", "SAB", "CODE", "STR"]].filter(pl.col("SAB").str.contains("OMIM"))
+    df_msh = MRCONSO[["CUI", "SAB", "CODE", "STR"]].filter(pl.col("SAB").str.contains("MSH"))
 
     df_omim.columns = ["CUI", "OMIM_SAB", "OMIM_CODE", "OMIM_STR"]
     df_msh.columns = ["CUI", "MSH_SAB", "MSH_CODE", "MSH_STR"]

@@ -276,9 +276,12 @@ def main(args):
         writer = csv.writer(f, delimiter=" ", quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
         writer.writerows(zip(total_tokens, total_labels, total_predictions, total_cuis))
+    
+    del model
+
+    torch.cuda.empty_cache()
 
     return [results[f"overall_{key}"] for key in ["precision", "recall", "f1", "accuracy"]]
-
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Say hello')
